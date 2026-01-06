@@ -4,6 +4,7 @@
 
 	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'approved');
 	let filter = $state('all' as 'all' | 'trusted' | 'check' | 'issue' | 'approved' | 'queued');
+	let searchQuery = $state('');
 	let storeData = $state({
 		invoices: [] as Invoice[],
 		approvedCount: 0,
@@ -11,16 +12,28 @@
 		issueCount: 0
 	});
 
-	let filteredInvoices = $derived(
-		filter === 'all'
-			? storeData.invoices.filter((inv) => inv.status !== 'Approved' && inv.status !== 'Queued')
-			: storeData.invoices.filter(
-					(inv) =>
-						inv.status.toLowerCase() === filter &&
-						inv.status !== 'Approved' &&
-						inv.status !== 'Queued'
-				)
-	);
+	let filteredInvoices = $derived.by(() => {
+		let invoices = storeData.invoices.filter(
+			(inv) => inv.status !== 'Approved' && inv.status !== 'Queued'
+		);
+
+		if (filter !== 'all') {
+			invoices = invoices.filter((inv) => inv.status.toLowerCase() === filter);
+		}
+
+		if (searchQuery.trim()) {
+			const query = searchQuery.toLowerCase();
+			invoices = invoices.filter(
+				(inv) =>
+					inv.vendor.toLowerCase().includes(query) ||
+					inv.description.toLowerCase().includes(query) ||
+					inv.date.includes(query) ||
+					inv.invoiceNumber.toLowerCase().includes(query)
+			);
+		}
+
+		return invoices;
+	});
 
 	// Subscribe to store
 	invoiceStore.subscribe((data) => {
@@ -80,6 +93,12 @@
 		{#if activeTab === 'inbox'}
 			<div class="space-y-4">
 				<div class="sticky top-0 flex items-center gap-4 bg-white pb-4">
+					<input
+						type="text"
+						placeholder="Search invoices..."
+						class="rounded border p-2"
+						bind:value={searchQuery}
+					/>
 					<label for="status-filter" class="text-sm font-medium">Filter:</label>
 					<select id="status-filter" class="rounded border p-2" bind:value={filter}>
 						<option value="all">All</option>
