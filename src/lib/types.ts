@@ -6,10 +6,10 @@ export interface Invoice {
 	invoiceNumber: string;
 	amount: number;
 	paymentType: 'Electronic' | 'Check';
-	status: 'Trusted' | 'Check' | 'Exception' | 'Approved' | 'Queued';
+	status: 'Trusted' | 'Check' | 'Issue' | 'Approved' | 'Queued';
 	reason: string; // One-line explanation for status
 	auditTrail: string[]; // Array of decision strings
-	// Additional fields for exceptions
+	// Additional fields for issues
 	duplicateId?: string;
 	typicalAmount?: number;
 }
@@ -18,5 +18,5 @@ export interface InvoiceStore {
 	invoices: Invoice[];
 	approvedCount: number;
 	queuedCount: number;
-	exceptionCount: number;
+	issueCount: number;
 }

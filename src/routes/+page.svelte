@@ -1,20 +1,25 @@
 <script lang="ts">
-	import { invoiceStore, approveTrusted, queueChecks, approveException } from '$lib/stores';
+	import { invoiceStore, approveTrusted, queueChecks } from '$lib/stores';
 	import type { Invoice } from '$lib/types';
 
-	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'digest');
-	let filter = $state('all' as 'all' | 'trusted' | 'check' | 'exception' | 'approved' | 'queued');
+	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'approved');
+	let filter = $state('all' as 'all' | 'trusted' | 'check' | 'issue' | 'approved' | 'queued');
 	let storeData = $state({
 		invoices: [] as Invoice[],
 		approvedCount: 0,
 		queuedCount: 0,
-		exceptionCount: 0
+		issueCount: 0
 	});
 
 	let filteredInvoices = $derived(
 		filter === 'all'
-			? storeData.invoices
-			: storeData.invoices.filter((inv) => inv.status.toLowerCase() === filter)
+			? storeData.invoices.filter((inv) => inv.status !== 'Approved' && inv.status !== 'Queued')
+			: storeData.invoices.filter(
+					(inv) =>
+						inv.status.toLowerCase() === filter &&
+						inv.status !== 'Approved' &&
+						inv.status !== 'Queued'
+				)
 	);
 
 	// Subscribe to store
@@ -29,10 +34,6 @@
 	function handleQueueChecks() {
 		queueChecks();
 	}
-
-	function handleApproveException(id: string) {
-		approveException(id);
-	}
 </script>
 
 <div class="min-h-screen bg-white text-black">
@@ -42,7 +43,7 @@
 			<span>Total: {storeData.invoices.length}</span>
 			<span>Approved: {storeData.approvedCount}</span>
 			<span>Queued: {storeData.queuedCount}</span>
-			<span>Exceptions: {storeData.exceptionCount}</span>
+			<span>Issues: {storeData.issueCount}</span>
 		</div>
 	</header>
 
@@ -52,19 +53,25 @@
 				class="px-4 py-2 {activeTab === 'inbox' ? 'border-b-2 border-black' : ''}"
 				onclick={() => (activeTab = 'inbox')}
 			>
-				Inbox
+				Inbox <span class="ml-2 rounded bg-black px-2 py-1 text-white"
+					>{storeData.invoices.length - storeData.approvedCount - storeData.queuedCount}</span
+				>
 			</button>
 			<button
 				class="px-4 py-2 {activeTab === 'check-queue' ? 'border-b-2 border-black' : ''}"
 				onclick={() => (activeTab = 'check-queue')}
 			>
-				Check Run Queue
+				Check Queue <span class="ml-2 rounded bg-black px-2 py-1 text-white"
+					>{storeData.queuedCount}</span
+				>
 			</button>
 			<button
-				class="px-4 py-2 {activeTab === 'digest' ? 'border-b-2 border-black' : ''}"
-				onclick={() => (activeTab = 'digest')}
+				class="px-4 py-2 {activeTab === 'approved' ? 'border-b-2 border-black' : ''}"
+				onclick={() => (activeTab = 'approved')}
 			>
-				Digest
+				Approved <span class="ml-2 rounded bg-black px-2 py-1 text-white"
+					>{storeData.approvedCount}</span
+				>
 			</button>
 		</div>
 	</nav>
@@ -72,14 +79,13 @@
 	<main class="p-4">
 		{#if activeTab === 'inbox'}
 			<div class="space-y-4">
-				<div class="flex items-center gap-4">
+				<div class="sticky top-0 flex items-center gap-4 bg-white pb-4">
 					<label for="status-filter" class="text-sm font-medium">Filter:</label>
 					<select id="status-filter" class="rounded border p-2" bind:value={filter}>
 						<option value="all">All</option>
 						<option value="trusted">Trusted</option>
 						<option value="check">Check</option>
-						<option value="exception">Exception</option>
-						<option value="approved">Approved</option>
+						<option value="issue">Issue</option>
 						<option value="queued">Queued</option>
 					</select>
 					<button class="border px-4 py-2" onclick={handleApproveTrusted}>
@@ -90,7 +96,7 @@
 						Queue all Checks ({storeData.invoices.filter((inv) => inv.status === 'Check').length})
 					</button>
 				</div>
-				<div>
+				<div class="overflow-y-auto" style="height: calc(100vh - 200px);">
 					<!-- Placeholder for invoice table -->
 					<p>Inbox: {filteredInvoices.length} invoices</p>
 					<table class="w-full border-collapse border">
@@ -107,9 +113,8 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each filteredInvoices as invoice}
-								<tr class="border-b hover:bg-gray-50" onclick={() => (activeTab = 'digest')}>
-									<!-- placeholder click -->
+							{#each filteredInvoices as invoice (invoice.id)}
+								<tr class="border-b hover:bg-gray-50">
 									<td class="p-2">{invoice.vendor}</td>
 									<td class="p-2">{invoice.description}</td>
 									<td class="p-2">{invoice.date}</td>
@@ -120,7 +125,7 @@
 										<span
 											class="rounded px-2 py-1 text-sm {invoice.status === 'Trusted'
 												? 'bg-green-100'
-												: invoice.status === 'Exception'
+												: invoice.status === 'Issue'
 													? 'bg-red-100'
 													: 'bg-blue-100'}"
 										>
@@ -135,43 +140,79 @@
 				</div>
 			</div>
 		{:else if activeTab === 'check-queue'}
+			<div class="space-y-4">
+				<div class="flex items-center gap-4">
+					<button class="border px-4 py-2">Print Checks</button>
+				</div>
+				<div>
+					<p>Check Queue: {storeData.queuedCount} invoices</p>
+					<table class="w-full border-collapse border">
+						<thead>
+							<tr class="border-b">
+								<th class="p-2 text-left">Vendor</th>
+								<th class="p-2 text-left">Description</th>
+								<th class="p-2 text-left">Date</th>
+								<th class="p-2 text-left">Invoice #</th>
+								<th class="p-2 text-right">Amount</th>
+								<th class="p-2 text-left">Payment</th>
+								<th class="p-2 text-left">Status</th>
+								<th class="p-2 text-left">Reason</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each storeData.invoices.filter((inv) => inv.status === 'Queued') as invoice (invoice.id)}
+								<tr class="border-b hover:bg-gray-50">
+									<td class="p-2">{invoice.vendor}</td>
+									<td class="p-2">{invoice.description}</td>
+									<td class="p-2">{invoice.date}</td>
+									<td class="p-2">{invoice.invoiceNumber}</td>
+									<td class="p-2 text-right">${invoice.amount}</td>
+									<td class="p-2">{invoice.paymentType}</td>
+									<td class="p-2">
+										<span class="rounded bg-blue-100 px-2 py-1 text-sm">{invoice.status}</span>
+									</td>
+									<td class="p-2">{invoice.reason}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		{:else if activeTab === 'approved'}
 			<div>
-				<!-- Placeholder for check queue -->
-				<p>Check Run Queue: {storeData.queuedCount} invoices</p>
+				<!-- Approved invoices -->
+				<h2 class="mb-4 text-xl">Approved Invoices</h2>
+				<p>Approved: {storeData.approvedCount} invoices</p>
 				<table class="w-full border-collapse border">
 					<thead>
 						<tr class="border-b">
 							<th class="p-2 text-left">Vendor</th>
-							<th class="p-2 text-left">Amount</th>
+							<th class="p-2 text-left">Description</th>
+							<th class="p-2 text-left">Date</th>
+							<th class="p-2 text-left">Invoice #</th>
+							<th class="p-2 text-right">Amount</th>
+							<th class="p-2 text-left">Payment</th>
 							<th class="p-2 text-left">Status</th>
+							<th class="p-2 text-left">Reason</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each storeData.invoices.filter((inv) => inv.status === 'Queued') as invoice}
-							<tr class="border-b">
+						{#each storeData.invoices.filter((inv) => inv.status === 'Approved') as invoice (invoice.id)}
+							<tr class="border-b hover:bg-gray-50">
 								<td class="p-2">{invoice.vendor}</td>
-								<td class="p-2">${invoice.amount}</td>
-								<td class="p-2">{invoice.status}</td>
+								<td class="p-2">{invoice.description}</td>
+								<td class="p-2">{invoice.date}</td>
+								<td class="p-2">{invoice.invoiceNumber}</td>
+								<td class="p-2 text-right">${invoice.amount}</td>
+								<td class="p-2">{invoice.paymentType}</td>
+								<td class="p-2">
+									<span class="rounded bg-green-100 px-2 py-1 text-sm">{invoice.status}</span>
+								</td>
+								<td class="p-2">{invoice.reason}</td>
 							</tr>
 						{/each}
 					</tbody>
 				</table>
-			</div>
-		{:else if activeTab === 'digest'}
-			<div>
-				<!-- Placeholder for digest -->
-				<h2 class="mb-4 text-xl">Digest Summary</h2>
-				<p>Approved electronically: {storeData.approvedCount}</p>
-				<p>Checks queued: {storeData.queuedCount}</p>
-				<p>Exceptions remaining: {storeData.exceptionCount}</p>
-				<h3 class="mt-4">Top 10 exceptions:</h3>
-				<ul>
-					{#each storeData.invoices
-						.filter((inv) => inv.status === 'Exception')
-						.slice(0, 10) as exception}
-						<li>{exception.reason} - {exception.vendor}</li>
-					{/each}
-				</ul>
 			</div>
 		{/if}
 	</main>

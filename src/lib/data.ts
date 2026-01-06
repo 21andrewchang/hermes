@@ -49,7 +49,7 @@ function generateInvoices(): Invoice[] {
 		});
 	}
 
-	// Generate 100 Exceptions
+	// Generate 100 Issues
 	// Duplicate invoice
 	for (let i = 0; i < 20; i++) {
 		const base = invoices[i];
@@ -61,7 +61,7 @@ function generateInvoices(): Invoice[] {
 			invoiceNumber: base.invoiceNumber, // same number
 			amount: base.amount,
 			paymentType: 'Electronic',
-			status: 'Exception',
+			status: 'Issue',
 			reason: 'Duplicate invoice number',
 			auditTrail: ['Duplicate invoice number detected'],
 			duplicateId: base.id
@@ -78,7 +78,7 @@ function generateInvoices(): Invoice[] {
 			invoiceNumber: `INV-N-${i.toString().padStart(4, '0')}`,
 			amount: 300,
 			paymentType: 'Electronic',
-			status: 'Exception',
+			status: 'Issue',
 			reason: 'New vendor not in trusted list',
 			auditTrail: ['Vendor not in approved list']
 		});
@@ -97,7 +97,7 @@ function generateInvoices(): Invoice[] {
 			invoiceNumber: `INV-H-${i.toString().padStart(4, '0')}`,
 			amount,
 			paymentType: 'Electronic',
-			status: 'Exception',
+			status: 'Issue',
 			reason: 'Amount exceeds typical',
 			auditTrail: ['Amount 3x higher than typical'],
 			typicalAmount: typical
@@ -115,7 +115,7 @@ function generateInvoices(): Invoice[] {
 			invoiceNumber: hasDate ? '' : `INV-M-${i.toString().padStart(4, '0')}`,
 			amount: 250,
 			paymentType: 'Electronic',
-			status: 'Exception',
+			status: 'Issue',
 			reason: `Missing ${hasDate ? 'invoice number' : 'date'}`,
 			auditTrail: [`Missing required field: ${hasDate ? 'invoice number' : 'date'}`]
 		});
@@ -132,7 +132,7 @@ function generateInvoices(): Invoice[] {
 			invoiceNumber: `INV-E-${i.toString().padStart(4, '0')}`,
 			amount: 400,
 			paymentType: 'Electronic', // but check vendor
-			status: 'Exception',
+			status: 'Issue',
 			reason: 'Check vendor with electronic payment',
 			auditTrail: ['Vendor requires check, but payment type electronic']
 		});
