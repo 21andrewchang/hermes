@@ -8,7 +8,6 @@
 	let suggestionStep = $state<'approve-trusted' | 'queue-checks' | 'handle-issues' | 'done'>(
 		'approve-trusted'
 	);
-	let issueIndex = $state(0);
 	let storeData = $state({
 		invoices: [] as Invoice[],
 		approvedCount: 0,
@@ -69,16 +68,14 @@
 			return `Approve all ${trustedCount} trusted invoices?`;
 		} else if (suggestionStep === 'queue-checks' && checkCount > 0) {
 			return `Queue all ${checkCount} check invoices?`;
-		} else if (suggestionStep === 'handle-issues' && issueCount > 0 && issueIndex < issueCount) {
+		} else if (suggestionStep === 'handle-issues' && issueCount > 0) {
 			const issues = storeData.invoices.filter((inv) => inv.status === 'Issue');
-			const currentIssue = issues[issueIndex];
+			const currentIssue = issues[0];
 			return `Review exception for ${currentIssue.vendor} - ${currentIssue.description}: ${currentIssue.reason}. Approve anyway?`;
 		} else {
 			return null;
 		}
 	});
-
-	let issues = $derived(() => storeData.invoices.filter((inv) => inv.status === 'Issue'));
 
 	function handleApproveTrusted() {
 		approveTrusted();
@@ -94,13 +91,9 @@
 		} else if (suggestionStep === 'queue-checks') {
 			handleQueueChecks();
 		} else if (suggestionStep === 'handle-issues') {
-			const currentIssues = issues();
-			if (issueIndex < currentIssues.length) {
-				approveIssue(currentIssues[issueIndex].id);
-				issueIndex++;
-				if (issueIndex >= currentIssues.length) {
-					suggestionStep = 'done';
-				}
+			const currentIssues = storeData.invoices.filter((inv) => inv.status === 'Issue');
+			if (currentIssues.length > 0) {
+				approveIssue(currentIssues[0].id);
 			}
 		}
 	}
@@ -111,10 +104,7 @@
 		} else if (suggestionStep === 'queue-checks') {
 			suggestionStep = 'handle-issues';
 		} else if (suggestionStep === 'handle-issues') {
-			issueIndex++;
-			if (issueIndex >= issues().length) {
-				suggestionStep = 'done';
-			}
+			// Do nothing for no, stays on the first issue
 		}
 	}
 </script>
