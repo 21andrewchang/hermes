@@ -19,7 +19,8 @@
 		invoices: [] as Invoice[],
 		approvedCount: 0,
 		queuedCount: 0,
-		issueCount: 0
+		issueCount: 0,
+		rejectedCount: 0
 	});
 
 	let filteredInvoices = $derived.by(() => {
@@ -161,7 +162,10 @@
 				onclick={() => (activeTab = 'inbox')}
 			>
 				Inbox <span class="ml-2 rounded bg-black px-2 py-1 text-white"
-					>{storeData.invoices.length - storeData.approvedCount - storeData.queuedCount}</span
+					>{storeData.invoices.length -
+						storeData.approvedCount -
+						storeData.queuedCount -
+						storeData.rejectedCount}</span
 				>
 			</button>
 			<button

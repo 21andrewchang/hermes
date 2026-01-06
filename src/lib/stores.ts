@@ -6,7 +6,8 @@ export const invoiceStore = writable({
 	invoices: initialInvoices,
 	approvedCount: 0,
 	queuedCount: 0,
-	issueCount: initialInvoices.filter((inv) => inv.status === 'Issue').length
+	issueCount: initialInvoices.filter((inv) => inv.status === 'Issue').length,
+	rejectedCount: 0
 });
 
 export function approveTrusted() {
@@ -69,6 +70,7 @@ export function rejectIssue(id: string, reason: string) {
 			inv.status = 'Rejected';
 			inv.auditTrail.push(`Rejected: ${reason}`);
 			store.issueCount = store.invoices.filter((i) => i.status === 'Issue').length;
+			store.rejectedCount = store.invoices.filter((i) => i.status === 'Rejected').length;
 		}
 		return store;
 	});

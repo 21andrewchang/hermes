@@ -19,4 +19,5 @@ export interface InvoiceStore {
 	approvedCount: number;
 	queuedCount: number;
 	issueCount: number;
+	rejectedCount: number;
 }
