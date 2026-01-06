@@ -1,10 +1,14 @@
 <script lang="ts">
-	import { invoiceStore, approveTrusted, queueChecks } from '$lib/stores';
+	import { invoiceStore, approveTrusted, queueChecks, approveIssue } from '$lib/stores';
 	import type { Invoice } from '$lib/types';
 
 	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'approved');
 	let filter = $state('all' as 'all' | 'trusted' | 'check' | 'issue' | 'approved' | 'queued');
 	let searchQuery = $state('');
+	let suggestionStep = $state<'approve-trusted' | 'queue-checks' | 'handle-issues' | 'done'>(
+		'approve-trusted'
+	);
+	let issueIndex = $state(0);
 	let storeData = $state({
 		invoices: [] as Invoice[],
 		approvedCount: 0,
@@ -38,7 +42,43 @@
 	// Subscribe to store
 	invoiceStore.subscribe((data) => {
 		storeData = data;
+		const trustedCount = data.invoices.filter((inv) => inv.status === 'Trusted').length;
+		const checkCount = data.invoices.filter((inv) => inv.status === 'Check').length;
+		const issueCount = data.invoices.filter((inv) => inv.status === 'Issue').length;
+
+		if (trustedCount > 0 && suggestionStep === 'approve-trusted') {
+			// stay
+		} else if (
+			checkCount > 0 &&
+			(suggestionStep === 'approve-trusted' || suggestionStep === 'queue-checks')
+		) {
+			suggestionStep = 'queue-checks';
+		} else if (issueCount > 0 && suggestionStep !== 'done') {
+			suggestionStep = 'handle-issues';
+		} else {
+			suggestionStep = 'done';
+		}
 	});
+
+	let currentSuggestion = $derived.by(() => {
+		const trustedCount = storeData.invoices.filter((inv) => inv.status === 'Trusted').length;
+		const checkCount = storeData.invoices.filter((inv) => inv.status === 'Check').length;
+		const issueCount = storeData.invoices.filter((inv) => inv.status === 'Issue').length;
+
+		if (suggestionStep === 'approve-trusted' && trustedCount > 0) {
+			return `Approve all ${trustedCount} trusted invoices?`;
+		} else if (suggestionStep === 'queue-checks' && checkCount > 0) {
+			return `Queue all ${checkCount} check invoices?`;
+		} else if (suggestionStep === 'handle-issues' && issueCount > 0 && issueIndex < issueCount) {
+			const issues = storeData.invoices.filter((inv) => inv.status === 'Issue');
+			const currentIssue = issues[issueIndex];
+			return `Review exception for ${currentIssue.vendor} - ${currentIssue.description}: ${currentIssue.reason}. Approve anyway?`;
+		} else {
+			return null;
+		}
+	});
+
+	let issues = $derived(() => storeData.invoices.filter((inv) => inv.status === 'Issue'));
 
 	function handleApproveTrusted() {
 		approveTrusted();
@@ -46,6 +86,36 @@
 
 	function handleQueueChecks() {
 		queueChecks();
+	}
+
+	function handleSuggestionYes() {
+		if (suggestionStep === 'approve-trusted') {
+			handleApproveTrusted();
+		} else if (suggestionStep === 'queue-checks') {
+			handleQueueChecks();
+		} else if (suggestionStep === 'handle-issues') {
+			const currentIssues = issues();
+			if (issueIndex < currentIssues.length) {
+				approveIssue(currentIssues[issueIndex].id);
+				issueIndex++;
+				if (issueIndex >= currentIssues.length) {
+					suggestionStep = 'done';
+				}
+			}
+		}
+	}
+
+	function handleSuggestionNo() {
+		if (suggestionStep === 'approve-trusted') {
+			suggestionStep = 'queue-checks';
+		} else if (suggestionStep === 'queue-checks') {
+			suggestionStep = 'handle-issues';
+		} else if (suggestionStep === 'handle-issues') {
+			issueIndex++;
+			if (issueIndex >= issues().length) {
+				suggestionStep = 'done';
+			}
+		}
 	}
 </script>
 
@@ -115,6 +185,26 @@
 						Queue all Checks ({storeData.invoices.filter((inv) => inv.status === 'Check').length})
 					</button>
 				</div>
+				{#if currentSuggestion}
+					<div class="rounded border bg-blue-50 p-4">
+						<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
+						<p class="mt-2 text-blue-800">{currentSuggestion}</p>
+						<div class="mt-4 flex gap-2">
+							<button
+								class="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+								onclick={handleSuggestionYes}
+							>
+								Yes
+							</button>
+							<button
+								class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+								onclick={handleSuggestionNo}
+							>
+								No
+							</button>
+						</div>
+					</div>
+				{/if}
 				<div class="overflow-y-auto" style="height: calc(100vh - 200px);">
 					<!-- Placeholder for invoice table -->
 					<p>Inbox: {filteredInvoices.length} invoices</p>
