@@ -49,9 +49,9 @@ function generateInvoices(): Invoice[] {
 		});
 	}
 
-	// Generate 100 Issues
+	// Generate 6 Issues (1 per reason)
 	// Duplicate invoice
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < 1; i++) {
 		const base = invoices[i];
 		invoices.push({
 			id: `dup-${i}`,
@@ -69,7 +69,7 @@ function generateInvoices(): Invoice[] {
 	}
 
 	// New vendor
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < 1; i++) {
 		invoices.push({
 			id: `new-${i}`,
 			vendor: `New Vendor ${i}`,
@@ -85,7 +85,7 @@ function generateInvoices(): Invoice[] {
 	}
 
 	// High amount
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < 1; i++) {
 		const vendor = trustedVendors[i % trustedVendors.length];
 		const typical = 300;
 		const amount = typical * 3 + i * 10; // >3x
@@ -105,7 +105,7 @@ function generateInvoices(): Invoice[] {
 	}
 
 	// Missing fields (date or invoice number)
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < 2; i++) {
 		const hasDate = i % 2 === 0;
 		invoices.push({
 			id: `missing-${i}`,
@@ -122,7 +122,7 @@ function generateInvoices(): Invoice[] {
 	}
 
 	// Check-only vendor with electronic (edge case)
-	for (let i = 0; i < 20; i++) {
+	for (let i = 0; i < 1; i++) {
 		const vendor = checkVendors[i % checkVendors.length];
 		invoices.push({
 			id: `edge-${i}`,

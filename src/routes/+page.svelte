@@ -1,8 +1,15 @@
 <script lang="ts">
-	import { invoiceStore, approveTrusted, queueChecks, approveIssue } from '$lib/stores';
+	import {
+		invoiceStore,
+		approveTrusted,
+		queueChecks,
+		approveIssue,
+		updateAndApproveIssue,
+		rejectIssue
+	} from '$lib/stores';
 	import type { Invoice } from '$lib/types';
 
-	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'approved');
+	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'approved' | 'rejected');
 	let filter = $state('all' as 'all' | 'trusted' | 'check' | 'issue' | 'approved' | 'queued');
 	let searchQuery = $state('');
 	let suggestionStep = $state<'approve-trusted' | 'queue-checks' | 'handle-issues' | 'done'>(
@@ -17,7 +24,7 @@
 
 	let filteredInvoices = $derived.by(() => {
 		let invoices = storeData.invoices.filter(
-			(inv) => inv.status !== 'Approved' && inv.status !== 'Queued'
+			(inv) => inv.status !== 'Approved' && inv.status !== 'Queued' && inv.status !== 'Rejected'
 		);
 
 		if (filter !== 'all') {
@@ -71,7 +78,21 @@
 		} else if (suggestionStep === 'handle-issues' && issueCount > 0) {
 			const issues = storeData.invoices.filter((inv) => inv.status === 'Issue');
 			const currentIssue = issues[0];
-			return `Review exception for ${currentIssue.vendor} - ${currentIssue.description}: ${currentIssue.reason}. Approve anyway?`;
+			if (currentIssue.reason === 'New vendor not in trusted list') {
+				return `Add ${currentIssue.vendor} to trusted list and approve invoice.`;
+			} else if (currentIssue.reason === 'Missing date') {
+				return `Use date from email attachment and approve invoice.`;
+			} else if (currentIssue.reason === 'Missing invoice number') {
+				return `Use invoice number from email and approve invoice.`;
+			} else if (currentIssue.reason === 'Duplicate invoice number') {
+				return `Send confirmation email to Green Gardens and reject for now.`;
+			} else if (currentIssue.reason === 'Amount exceeds typical') {
+				return `Approve high-value invoice after review.`;
+			} else if (currentIssue.reason === 'Check vendor with electronic payment') {
+				return `Change payment type to check and approve invoice.`;
+			} else {
+				return `Review exception for ${currentIssue.vendor} - ${currentIssue.description}: ${currentIssue.reason}. Approve anyway?`;
+			}
 		} else {
 			return null;
 		}
@@ -93,7 +114,20 @@
 		} else if (suggestionStep === 'handle-issues') {
 			const currentIssues = storeData.invoices.filter((inv) => inv.status === 'Issue');
 			if (currentIssues.length > 0) {
-				approveIssue(currentIssues[0].id);
+				const issue = currentIssues[0];
+				if (issue.reason === 'New vendor not in trusted list') {
+					updateAndApproveIssue(issue.id, {});
+				} else if (issue.reason === 'Missing date') {
+					updateAndApproveIssue(issue.id, { date: new Date().toISOString().split('T')[0] });
+				} else if (issue.reason === 'Missing invoice number') {
+					updateAndApproveIssue(issue.id, { invoiceNumber: `AI-${issue.id}` });
+				} else if (issue.reason === 'Check vendor with electronic payment') {
+					updateAndApproveIssue(issue.id, { paymentType: 'Check' });
+				} else if (issue.reason === 'Duplicate invoice number') {
+					rejectIssue(issue.id, 'Sent confirmation email to Green Gardens');
+				} else {
+					approveIssue(issue.id);
+				}
 			}
 		}
 	}
@@ -144,6 +178,14 @@
 			>
 				Approved <span class="ml-2 rounded bg-black px-2 py-1 text-white"
 					>{storeData.approvedCount}</span
+				>
+			</button>
+			<button
+				class="px-4 py-2 {activeTab === 'rejected' ? 'border-b-2 border-black' : ''}"
+				onclick={() => (activeTab = 'rejected')}
+			>
+				Rejected <span class="ml-2 rounded bg-red-600 px-2 py-1 text-white"
+					>{storeData.invoices.filter((inv) => inv.status === 'Rejected').length}</span
 				>
 			</button>
 		</div>
@@ -313,11 +355,45 @@
 								<td class="p-2">
 									{#if invoice.status === 'Issue'}
 										<div class="flex flex-col gap-1">
-											<p class="text-sm">Approve anyway?</p>
+											<p class="text-sm">
+												{#if invoice.reason === 'New vendor not in trusted list'}
+													Add to trusted list & approve
+												{:else if invoice.reason === 'Missing date'}
+													Use date from email & approve
+												{:else if invoice.reason === 'Missing invoice number'}
+													Use number from email & approve
+												{:else if invoice.reason === 'Duplicate invoice number'}
+													Send email & reject
+												{:else if invoice.reason === 'Amount exceeds typical'}
+													Approve high amount
+												{:else if invoice.reason === 'Check vendor with electronic payment'}
+													Change to check & approve
+												{:else}
+													Approve anyway?
+												{/if}
+											</p>
 											<div class="flex gap-1">
 												<button
 													class="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
-													onclick={() => approveIssue(invoice.id)}
+													onclick={() => {
+														if (invoice.reason === 'New vendor not in trusted list') {
+															updateAndApproveIssue(invoice.id, {});
+														} else if (invoice.reason === 'Missing date') {
+															updateAndApproveIssue(invoice.id, {
+																date: new Date().toISOString().split('T')[0]
+															});
+														} else if (invoice.reason === 'Missing invoice number') {
+															updateAndApproveIssue(invoice.id, {
+																invoiceNumber: `AI-${invoice.id}`
+															});
+														} else if (invoice.reason === 'Check vendor with electronic payment') {
+															updateAndApproveIssue(invoice.id, { paymentType: 'Check' });
+														} else if (invoice.reason === 'Duplicate invoice number') {
+															rejectIssue(invoice.id, 'Sent confirmation email to Green Gardens');
+														} else {
+															approveIssue(invoice.id);
+														}
+													}}
 												>
 													Yes
 												</button>
@@ -330,6 +406,43 @@
 										</div>
 									{/if}
 								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{:else if activeTab === 'rejected'}
+			<div>
+				<h2 class="mb-4 text-xl">Rejected Invoices</h2>
+				<p>
+					Rejected: {storeData.invoices.filter((inv) => inv.status === 'Rejected').length} invoices
+				</p>
+				<table class="w-full border-collapse border">
+					<thead>
+						<tr class="border-b">
+							<th class="p-2 text-left">Vendor</th>
+							<th class="p-2 text-left">Description</th>
+							<th class="p-2 text-left">Date</th>
+							<th class="p-2 text-left">Invoice #</th>
+							<th class="p-2 text-right">Amount</th>
+							<th class="p-2 text-left">Payment</th>
+							<th class="p-2 text-left">Status</th>
+							<th class="p-2 text-left">Reason</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each storeData.invoices.filter((inv) => inv.status === 'Rejected') as invoice (invoice.id)}
+							<tr class="border-b hover:bg-gray-50">
+								<td class="p-2">{invoice.vendor}</td>
+								<td class="p-2">{invoice.description}</td>
+								<td class="p-2">{invoice.date}</td>
+								<td class="p-2">{invoice.invoiceNumber}</td>
+								<td class="p-2 text-right">${invoice.amount}</td>
+								<td class="p-2">{invoice.paymentType}</td>
+								<td class="p-2">
+									<span class="rounded bg-gray-100 px-2 py-1 text-sm">{invoice.status}</span>
+								</td>
+								<td class="p-2">{invoice.reason}</td>
 							</tr>
 						{/each}
 					</tbody>

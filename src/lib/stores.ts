@@ -1,5 +1,4 @@
 import { writable } from 'svelte/store';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { Invoice } from './types';
 import { invoices as initialInvoices } from './data';
 
@@ -43,6 +42,32 @@ export function approveIssue(id: string) {
 			inv.status = 'Approved';
 			inv.auditTrail.push('Manually approved despite issue');
 			store.approvedCount = store.invoices.filter((i) => i.status === 'Approved').length;
+			store.issueCount = store.invoices.filter((i) => i.status === 'Issue').length;
+		}
+		return store;
+	});
+}
+
+export function updateAndApproveIssue(id: string, updates: Partial<Invoice>) {
+	invoiceStore.update((store) => {
+		const inv = store.invoices.find((i) => i.id === id);
+		if (inv && inv.status === 'Issue') {
+			Object.assign(inv, updates);
+			inv.status = 'Approved';
+			inv.auditTrail.push(`AI resolved: ${Object.keys(updates).join(', ')} updated and approved`);
+			store.approvedCount = store.invoices.filter((i) => i.status === 'Approved').length;
+			store.issueCount = store.invoices.filter((i) => i.status === 'Issue').length;
+		}
+		return store;
+	});
+}
+
+export function rejectIssue(id: string, reason: string) {
+	invoiceStore.update((store) => {
+		const inv = store.invoices.find((i) => i.id === id);
+		if (inv && inv.status === 'Issue') {
+			inv.status = 'Rejected';
+			inv.auditTrail.push(`Rejected: ${reason}`);
 			store.issueCount = store.invoices.filter((i) => i.status === 'Issue').length;
 		}
 		return store;
