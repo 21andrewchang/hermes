@@ -205,6 +205,7 @@
 						</div>
 					</div>
 				{/if}
+
 				<div class="overflow-y-auto" style="height: calc(100vh - 200px);">
 					<!-- Placeholder for invoice table -->
 					<p>Inbox: {filteredInvoices.length} invoices</p>
@@ -303,6 +304,7 @@
 							<th class="p-2 text-left">Payment</th>
 							<th class="p-2 text-left">Status</th>
 							<th class="p-2 text-left">Reason</th>
+							<th class="p-2 text-left">AI Suggestion</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -318,6 +320,26 @@
 									<span class="rounded bg-green-100 px-2 py-1 text-sm">{invoice.status}</span>
 								</td>
 								<td class="p-2">{invoice.reason}</td>
+								<td class="p-2">
+									{#if invoice.status === 'Issue'}
+										<div class="flex flex-col gap-1">
+											<p class="text-sm">Approve anyway?</p>
+											<div class="flex gap-1">
+												<button
+													class="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
+													onclick={() => approveIssue(invoice.id)}
+												>
+													Yes
+												</button>
+												<button
+													class="rounded bg-gray-600 px-2 py-1 text-xs text-white hover:bg-gray-700"
+												>
+													No
+												</button>
+											</div>
+										</div>
+									{/if}
+								</td>
 							</tr>
 						{/each}
 					</tbody>
