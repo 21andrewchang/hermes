@@ -17,6 +17,12 @@
 	let filter = $state('all' as 'all' | 'trusted' | 'check' | 'issue' | 'approved');
 	let searchQuery = $state('');
 
+	let navElement: HTMLElement;
+	let buttonRefs: (HTMLElement | null)[] = [null, null, null, null];
+	let bgLeft = $state(0);
+	let bgWidth = $state(0);
+	let bgOpacity = $state(0);
+
 	let suggestionStep = $state<'approve-trusted' | 'queue-checks' | 'handle-issues' | 'done'>(
 		'approve-trusted'
 	);
@@ -215,11 +221,27 @@
 		<div class="text-lg">NBK Property Management</div>
 	</header>
 
-	<nav class="border-b border-stone-200">
-		<div class="mx-4 mb-2 flex">
+	<nav class="relative border-b border-stone-200" bind:this={navElement}>
+		<div
+			class="absolute rounded-md bg-stone-50 transition-all duration-300 ease-in-out"
+			style="left: {bgLeft}px; top: 8px; height: calc(100% - 16px); width: {bgWidth}px; opacity: {bgOpacity}"
+		></div>
+		<div class="mx-4 mt-2 mb-2 flex">
 			<button
-				class="flex items-center gap-2 px-4 py-2 hover:rounded-md hover:bg-stone-50"
+				class="relative z-10 flex items-center gap-2 px-4 py-2 hover:rounded-md"
+				bind:this={buttonRefs[0]}
 				onclick={() => (activeTab = 'inbox')}
+				onmouseenter={() => {
+					if (!buttonRefs[0] || !navElement) return;
+					const rect = buttonRefs[0].getBoundingClientRect();
+					const navRect = navElement.getBoundingClientRect();
+					bgLeft = rect.left - navRect.left;
+					bgWidth = rect.width;
+					bgOpacity = 1;
+				}}
+				onmouseleave={() => {
+					bgOpacity = 0;
+				}}
 			>
 				Inbox
 				<span class="rounded bg-stone-700 px-2 py-1 text-xs text-white">
@@ -230,20 +252,56 @@
 				</span>
 			</button>
 			<button
-				class="px-4 py-2 hover:rounded-md hover:bg-stone-50"
+				class="relative z-10 px-4 py-2 hover:rounded-md"
+				bind:this={buttonRefs[1]}
 				onclick={() => (activeTab = 'check-queue')}
+				onmouseenter={() => {
+					if (!buttonRefs[1] || !navElement) return;
+					const rect = buttonRefs[1].getBoundingClientRect();
+					const navRect = navElement.getBoundingClientRect();
+					bgLeft = rect.left - navRect.left;
+					bgWidth = rect.width;
+					bgOpacity = 1;
+				}}
+				onmouseleave={() => {
+					bgOpacity = 0;
+				}}
 			>
 				Check Queue
 			</button>
 			<button
-				class="px-4 py-2 hover:rounded-md hover:bg-stone-50"
+				class="relative z-10 px-4 py-2 hover:rounded-md"
+				bind:this={buttonRefs[2]}
 				onclick={() => (activeTab = 'approved')}
+				onmouseenter={() => {
+					if (!buttonRefs[2] || !navElement) return;
+					const rect = buttonRefs[2].getBoundingClientRect();
+					const navRect = navElement.getBoundingClientRect();
+					bgLeft = rect.left - navRect.left;
+					bgWidth = rect.width;
+					bgOpacity = 1;
+				}}
+				onmouseleave={() => {
+					bgOpacity = 0;
+				}}
 			>
 				Approved
 			</button>
 			<button
-				class="px-4 py-2 hover:rounded-md hover:bg-stone-50"
+				class="relative z-10 px-4 py-2 hover:rounded-md"
+				bind:this={buttonRefs[3]}
 				onclick={() => (activeTab = 'rejected')}
+				onmouseenter={() => {
+					if (!buttonRefs[3] || !navElement) return;
+					const rect = buttonRefs[3].getBoundingClientRect();
+					const navRect = navElement.getBoundingClientRect();
+					bgLeft = rect.left - navRect.left;
+					bgWidth = rect.width;
+					bgOpacity = 1;
+				}}
+				onmouseleave={() => {
+					bgOpacity = 0;
+				}}
 			>
 				Rejected
 			</button>
