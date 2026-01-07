@@ -103,15 +103,13 @@
 			return {
 				action: `Approve all ${trustedCount} trusted invoices.`,
 				reasoning:
-					'These vendors are in the approved list and amounts are under the $500 threshold.',
-				showNoButton: false
+					'These vendors are in the approved list and amounts are under the $500 threshold.'
 			};
 		} else if (suggestionStep === 'queue-checks' && checkCount > 0) {
 			return {
 				action: `Queue all ${checkCount} check invoices.`,
 				reasoning:
-					'These vendors require check payment processing. You can print the checks in the Check Queue tab.',
-				showNoButton: false
+					'These vendors require check payment processing. You can print the checks in the Check Queue tab.'
 			};
 		} else if (suggestionStep === 'handle-issues' && issueCount > 0) {
 			const issues = storeData.invoices.filter((inv) => inv.status === 'Issue');
@@ -121,46 +119,39 @@
 				return {
 					action: `Add ${currentIssue.vendor} to trusted list and approve invoice.`,
 					reasoning:
-						'This appears to be a legitimate new vendor that should be added to the approved list.',
-					showNoButton: true
+						'This appears to be a legitimate new vendor that should be added to the approved list.'
 				};
 			} else if (currentIssue.reason === 'Missing date') {
 				return {
 					action: 'Use date from email attachment and approve invoice.',
-					reasoning: 'The invoice date can be found in the attached email document.',
-					showNoButton: true
+					reasoning: 'The invoice date can be found in the attached email document.'
 				};
 			} else if (currentIssue.reason === 'Missing invoice number') {
 				return {
 					action: 'Use invoice number from email and approve invoice.',
-					reasoning: 'The invoice number is available in the email content.',
-					showNoButton: true
+					reasoning: 'The invoice number is available in the email content.'
 				};
 			} else if (currentIssue.reason === 'Duplicate invoice number') {
 				return {
 					action: 'Send confirmation email to Green Gardens and reject for now.',
 					reasoning:
-						'This invoice number matches an existing record. Contact vendor for clarification.',
-					showNoButton: true
+						'This invoice number matches an existing record. Contact vendor for clarification.'
 				};
 			} else if (currentIssue.reason === 'Amount exceeds typical') {
 				return {
 					action: 'Approve high-value invoice after review.',
 					reasoning:
-						'Amount is 3x higher than typical but appears legitimate based on vendor history.',
-					showNoButton: true
+						'Amount is 3x higher than typical but appears legitimate based on vendor history.'
 				};
 			} else if (currentIssue.reason === 'Check vendor with electronic payment') {
 				return {
 					action: 'Change payment type to check and approve invoice.',
-					reasoning: 'This vendor requires check payment despite electronic request.',
-					showNoButton: true
+					reasoning: 'This vendor requires check payment despite electronic request.'
 				};
 			} else {
 				return {
 					action: `Review exception for ${currentIssue.vendor} - ${currentIssue.description}: ${currentIssue.reason}. Approve anyway?`,
-					reasoning: 'Manual review required for this exception case.',
-					showNoButton: true
+					reasoning: 'Manual review required for this exception case.'
 				};
 			}
 		} else {
@@ -257,7 +248,9 @@
 			<div class="flex h-full flex-col space-y-4">
 				<div class="flex items-center gap-4">
 					{#if currentSuggestion}
-						<div class="flex flex-1 items-center gap-2 bg-blue-50 p-3 rounded-md border-blue-900 border">
+						<div
+							class="flex flex-1 items-center gap-2 rounded-md border border-blue-900 bg-blue-50 p-4"
+						>
 							<span class="font-semibold text-blue-900"
 								>AI Suggestion: {currentSuggestion.action}</span
 							>
@@ -268,30 +261,23 @@
 								>
 									Yes
 								</button>
-								{#if currentSuggestion.showNoButton}
-									<button
-										class="rounded bg-red-600 px-2 py-1 text-sm text-white hover:bg-red-700"
-										onclick={handleSuggestionNo}
-									>
-										No
-									</button>
-								{:else}
-									<button
-										class="rounded bg-gray-600 px-2 py-1 text-sm text-white hover:bg-gray-700"
-									>
-										Review Later
-									</button>
-								{/if}
+								<button class="rounded bg-gray-600 px-2 py-1 text-sm text-white hover:bg-gray-700">
+									Review Later
+								</button>
 							</div>
 						</div>
 					{/if}
 					<input
 						type="text"
 						placeholder="Search invoices..."
-						class="rounded border p-4 text-md"
+						class="text-md rounded-md border border-stone-300 p-4"
 						bind:value={searchQuery}
 					/>
-					<select id="status-filter" class="rounded border p-4" bind:value={filter}>
+					<select
+						id="status-filter"
+						class="rounded-md border border-stone-300 p-4"
+						bind:value={filter}
+					>
 						<option value="all">All</option>
 						<option value="trusted">Trusted</option>
 						<option value="check">Check</option>
