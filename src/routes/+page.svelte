@@ -157,7 +157,7 @@
 	}
 </script>
 
-<div class="min-h-screen bg-white text-black">
+<div class="flex h-screen flex-col bg-white text-black">
 	<header class="border-b p-4">
 		<h1 class="text-2xl font-bold">Invoice Automation Demo</h1>
 		<div class="mt-2 flex gap-4">
@@ -208,9 +208,9 @@
 		</div>
 	</nav>
 
-	<main class="p-4">
+	<main class="flex-1 overflow-hidden p-4">
 		{#if activeTab === 'inbox'}
-			<div class="space-y-4">
+			<div class="flex h-full flex-col space-y-4">
 				{#if currentSuggestion}
 					<div class="rounded border bg-blue-50 p-4">
 						<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
@@ -231,7 +231,7 @@
 						</div>
 					</div>
 				{/if}
-				<div class="sticky top-0 flex items-center gap-4 bg-white pb-4">
+				<div class="flex items-center gap-4">
 					<input
 						type="text"
 						placeholder="Search invoices..."
@@ -255,11 +255,9 @@
 					</button>
 				</div>
 
-				<div class="overflow-y-auto" style="height: calc(100vh - 200px);">
-					<!-- Placeholder for invoice table -->
-					<p>Inbox: {filteredInvoices.length} invoices</p>
+				<div class="flex-1 overflow-y-auto">
 					<table class="w-full border-collapse border">
-						<thead>
+						<thead class="sticky top-0 bg-white">
 							<tr class="border-b">
 								<th class="p-2 text-left">Vendor</th>
 								<th class="p-2 text-left">Description</th>
@@ -302,9 +300,45 @@
 				</div>
 			</div>
 		{:else if activeTab === 'check-queue'}
-			<div class="space-y-4">
+			<div class="flex h-full flex-col space-y-4">
 				<div class="flex items-center gap-4">
 					<button class="border px-4 py-2">Print Checks</button>
+				</div>
+				<div class="flex-1 overflow-y-auto">
+					<p>Check Queue: {storeData.queuedCount} invoices</p>
+					<table class="w-full border-collapse border">
+						<thead class="sticky top-0 bg-white">
+							<tr class="border-b">
+								<th class="p-2 text-left">Vendor</th>
+								<th class="p-2 text-left">Description</th>
+								<th class="p-2 text-left">Date</th>
+								<th class="p-2 text-left">Invoice #</th>
+								<th class="p-2 text-right">Amount</th>
+								<th class="p-2 text-left">Payment</th>
+								<th class="p-2 text-left">Status</th>
+								<th class="p-2 text-left">Reason</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each storeData.invoices.filter((inv) => inv.status === 'Queued') as invoice (invoice.id)}
+								<tr
+									class="cursor-pointer border-b hover:bg-gray-50"
+									onclick={() => openInvoiceDetail(invoice)}
+								>
+									<td class="p-2">{invoice.vendor}</td>
+									<td class="p-2">{invoice.description}</td>
+									<td class="p-2">{invoice.date}</td>
+									<td class="p-2">{invoice.invoiceNumber}</td>
+									<td class="p-2 text-right">${invoice.amount}</td>
+									<td class="p-2">{invoice.paymentType}</td>
+									<td class="p-2">
+										<span class="rounded bg-blue-100 px-2 py-1 text-sm">{invoice.status}</span>
+									</td>
+									<td class="p-2">{invoice.reason}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
 				<div>
 					<p>Check Queue: {storeData.queuedCount} invoices</p>
@@ -344,138 +378,173 @@
 				</div>
 			</div>
 		{:else if activeTab === 'approved'}
-			<div>
-				<!-- Approved invoices -->
-				<h2 class="mb-4 text-xl">Approved Invoices</h2>
-				<p>Approved: {storeData.approvedCount} invoices</p>
-				<table class="w-full border-collapse border">
-					<thead>
-						<tr class="border-b">
-							<th class="p-2 text-left">Vendor</th>
-							<th class="p-2 text-left">Description</th>
-							<th class="p-2 text-left">Date</th>
-							<th class="p-2 text-left">Invoice #</th>
-							<th class="p-2 text-right">Amount</th>
-							<th class="p-2 text-left">Payment</th>
-							<th class="p-2 text-left">Status</th>
-							<th class="p-2 text-left">Reason</th>
-							<th class="p-2 text-left">AI Suggestion</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each storeData.invoices.filter((inv) => inv.status === 'Approved') as invoice (invoice.id)}
-							<tr
-								class="cursor-pointer border-b hover:bg-gray-50"
-								onclick={() => openInvoiceDetail(invoice)}
-							>
-								<td class="p-2">{invoice.vendor}</td>
-								<td class="p-2">{invoice.description}</td>
-								<td class="p-2">{invoice.date}</td>
-								<td class="p-2">{invoice.invoiceNumber}</td>
-								<td class="p-2 text-right">${invoice.amount}</td>
-								<td class="p-2">{invoice.paymentType}</td>
-								<td class="p-2">
-									<span class="rounded bg-green-100 px-2 py-1 text-sm">{invoice.status}</span>
-								</td>
-								<td class="p-2">{invoice.reason}</td>
-								<td class="p-2">
-									{#if invoice.status === 'Issue'}
-										<div class="flex flex-col gap-1">
-											<p class="text-sm">
-												{#if invoice.reason === 'New vendor not in trusted list'}
-													Add to trusted list & approve
-												{:else if invoice.reason === 'Missing date'}
-													Use date from email & approve
-												{:else if invoice.reason === 'Missing invoice number'}
-													Use number from email & approve
-												{:else if invoice.reason === 'Duplicate invoice number'}
-													Send email & reject
-												{:else if invoice.reason === 'Amount exceeds typical'}
-													Approve high amount
-												{:else if invoice.reason === 'Check vendor with electronic payment'}
-													Change to check & approve
-												{:else}
-													Approve anyway?
-												{/if}
-											</p>
-											<div class="flex gap-1">
-												<button
-													class="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
-													onclick={() => {
-														if (invoice.reason === 'New vendor not in trusted list') {
-															updateAndApproveIssue(invoice.id, {});
-														} else if (invoice.reason === 'Missing date') {
-															updateAndApproveIssue(invoice.id, {
-																date: new Date().toISOString().split('T')[0]
-															});
-														} else if (invoice.reason === 'Missing invoice number') {
-															updateAndApproveIssue(invoice.id, {
-																invoiceNumber: `AI-${invoice.id}`
-															});
-														} else if (invoice.reason === 'Check vendor with electronic payment') {
-															updateAndApproveIssue(invoice.id, { paymentType: 'Check' });
-														} else if (invoice.reason === 'Duplicate invoice number') {
-															rejectIssue(invoice.id, 'Sent confirmation email to Green Gardens');
-														} else {
-															approveIssue(invoice.id);
-														}
-													}}
-												>
-													Yes
-												</button>
-												<button
-													class="rounded bg-gray-600 px-2 py-1 text-xs text-white hover:bg-gray-700"
-												>
-													No
-												</button>
-											</div>
-										</div>
-									{/if}
-								</td>
+			<div class="flex h-full flex-col space-y-4">
+				<div>
+					<!-- Approved invoices -->
+					<h2 class="mb-4 text-xl">Approved Invoices</h2>
+					<p>Approved: {storeData.approvedCount} invoices</p>
+				</div>
+				<div class="flex-1 overflow-y-auto">
+					<table class="w-full border-collapse border">
+						<thead class="sticky top-0 bg-white">
+							<tr class="border-b">
+								<th class="p-2 text-left">Vendor</th>
+								<th class="p-2 text-left">Description</th>
+								<th class="p-2 text-left">Date</th>
+								<th class="p-2 text-left">Invoice #</th>
+								<th class="p-2 text-right">Amount</th>
+								<th class="p-2 text-left">Payment</th>
+								<th class="p-2 text-left">Status</th>
+								<th class="p-2 text-left">Reason</th>
+								<th class="p-2 text-left">AI Suggestion</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
+						</thead>
+						<thead>
+							<tr class="border-b">
+								<th class="p-2 text-left">Vendor</th>
+								<th class="p-2 text-left">Description</th>
+								<th class="p-2 text-left">Date</th>
+								<th class="p-2 text-left">Invoice #</th>
+								<th class="p-2 text-right">Amount</th>
+								<th class="p-2 text-left">Payment</th>
+								<th class="p-2 text-left">Status</th>
+								<th class="p-2 text-left">Reason</th>
+								<th class="p-2 text-left">AI Suggestion</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each storeData.invoices.filter((inv) => inv.status === 'Approved') as invoice (invoice.id)}
+								<tr
+									class="cursor-pointer border-b hover:bg-gray-50"
+									onclick={() => openInvoiceDetail(invoice)}
+								>
+									<td class="p-2">{invoice.vendor}</td>
+									<td class="p-2">{invoice.description}</td>
+									<td class="p-2">{invoice.date}</td>
+									<td class="p-2">{invoice.invoiceNumber}</td>
+									<td class="p-2 text-right">${invoice.amount}</td>
+									<td class="p-2">{invoice.paymentType}</td>
+									<td class="p-2">
+										<span class="rounded bg-green-100 px-2 py-1 text-sm">{invoice.status}</span>
+									</td>
+									<td class="p-2">{invoice.reason}</td>
+									<td class="p-2">
+										{#if invoice.status === 'Issue'}
+											<div class="flex flex-col gap-1">
+												<p class="text-sm">
+													{#if invoice.reason === 'New vendor not in trusted list'}
+														Add to trusted list & approve
+													{:else if invoice.reason === 'Missing date'}
+														Use date from email & approve
+													{:else if invoice.reason === 'Missing invoice number'}
+														Use number from email & approve
+													{:else if invoice.reason === 'Duplicate invoice number'}
+														Send email & reject
+													{:else if invoice.reason === 'Amount exceeds typical'}
+														Approve high amount
+													{:else if invoice.reason === 'Check vendor with electronic payment'}
+														Change to check & approve
+													{:else}
+														Approve anyway?
+													{/if}
+												</p>
+												<div class="flex gap-1">
+													<button
+														class="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700"
+														onclick={() => {
+															if (invoice.reason === 'New vendor not in trusted list') {
+																updateAndApproveIssue(invoice.id, {});
+															} else if (invoice.reason === 'Missing date') {
+																updateAndApproveIssue(invoice.id, {
+																	date: new Date().toISOString().split('T')[0]
+																});
+															} else if (invoice.reason === 'Missing invoice number') {
+																updateAndApproveIssue(invoice.id, {
+																	invoiceNumber: `AI-${invoice.id}`
+																});
+															} else if (
+																invoice.reason === 'Check vendor with electronic payment'
+															) {
+																updateAndApproveIssue(invoice.id, { paymentType: 'Check' });
+															} else if (invoice.reason === 'Duplicate invoice number') {
+																rejectIssue(invoice.id, 'Sent confirmation email to Green Gardens');
+															} else {
+																approveIssue(invoice.id);
+															}
+														}}
+													>
+														Yes
+													</button>
+													<button
+														class="rounded bg-gray-600 px-2 py-1 text-xs text-white hover:bg-gray-700"
+													>
+														No
+													</button>
+												</div>
+											</div>
+										{/if}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			</div>
 		{:else if activeTab === 'rejected'}
-			<div>
-				<h2 class="mb-4 text-xl">Rejected Invoices</h2>
-				<p>
-					Rejected: {storeData.invoices.filter((inv) => inv.status === 'Rejected').length} invoices
-				</p>
-				<table class="w-full border-collapse border">
-					<thead>
-						<tr class="border-b">
-							<th class="p-2 text-left">Vendor</th>
-							<th class="p-2 text-left">Description</th>
-							<th class="p-2 text-left">Date</th>
-							<th class="p-2 text-left">Invoice #</th>
-							<th class="p-2 text-right">Amount</th>
-							<th class="p-2 text-left">Payment</th>
-							<th class="p-2 text-left">Status</th>
-							<th class="p-2 text-left">Reason</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each storeData.invoices.filter((inv) => inv.status === 'Rejected') as invoice (invoice.id)}
-							<tr
-								class="cursor-pointer border-b hover:bg-gray-50"
-								onclick={() => openInvoiceDetail(invoice)}
-							>
-								<td class="p-2">{invoice.vendor}</td>
-								<td class="p-2">{invoice.description}</td>
-								<td class="p-2">{invoice.date}</td>
-								<td class="p-2">{invoice.invoiceNumber}</td>
-								<td class="p-2 text-right">${invoice.amount}</td>
-								<td class="p-2">{invoice.paymentType}</td>
-								<td class="p-2">
-									<span class="rounded bg-gray-100 px-2 py-1 text-sm">{invoice.status}</span>
-								</td>
-								<td class="p-2">{invoice.reason}</td>
+			<div class="flex h-full flex-col space-y-4">
+				<div>
+					<h2 class="mb-4 text-xl">Rejected Invoices</h2>
+					<p>
+						Rejected: {storeData.invoices.filter((inv) => inv.status === 'Rejected').length} invoices
+					</p>
+				</div>
+				<div class="flex-1 overflow-y-auto">
+					<table class="w-full border-collapse border">
+						<thead class="sticky top-0 bg-white">
+							<tr class="border-b">
+								<th class="p-2 text-left">Vendor</th>
+								<th class="p-2 text-left">Description</th>
+								<th class="p-2 text-left">Date</th>
+								<th class="p-2 text-left">Invoice #</th>
+								<th class="p-2 text-right">Amount</th>
+								<th class="p-2 text-left">Payment</th>
+								<th class="p-2 text-left">Status</th>
+								<th class="p-2 text-left">Reason</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
+						</thead>
+						<thead>
+							<tr class="border-b">
+								<th class="p-2 text-left">Vendor</th>
+								<th class="p-2 text-left">Description</th>
+								<th class="p-2 text-left">Date</th>
+								<th class="p-2 text-left">Invoice #</th>
+								<th class="p-2 text-right">Amount</th>
+								<th class="p-2 text-left">Payment</th>
+								<th class="p-2 text-left">Status</th>
+								<th class="p-2 text-left">Reason</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each storeData.invoices.filter((inv) => inv.status === 'Rejected') as invoice (invoice.id)}
+								<tr
+									class="cursor-pointer border-b hover:bg-gray-50"
+									onclick={() => openInvoiceDetail(invoice)}
+								>
+									<td class="p-2">{invoice.vendor}</td>
+									<td class="p-2">{invoice.description}</td>
+									<td class="p-2">{invoice.date}</td>
+									<td class="p-2">{invoice.invoiceNumber}</td>
+									<td class="p-2 text-right">${invoice.amount}</td>
+									<td class="p-2">{invoice.paymentType}</td>
+									<td class="p-2">
+										<span class="rounded bg-gray-100 px-2 py-1 text-sm">{invoice.status}</span>
+									</td>
+									<td class="p-2">{invoice.reason}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			</div>
 		{/if}
 	</main>
