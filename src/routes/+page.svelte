@@ -32,8 +32,7 @@
 	let isDrawerOpen = $state(false);
 
 	// Shared grid layout for "table"
-	const gridStyle =
-		'grid-template-columns: 180px 1.6fr 120px 140px 120px 120px 120px 2fr;';
+	const gridStyle = 'grid-template-columns: 180px 1.6fr 120px 140px 120px 120px 120px 2fr;';
 
 	function formatAmount(amount: any) {
 		const n = typeof amount === 'number' ? amount : Number(amount);
@@ -101,27 +100,68 @@
 		const issueCount = storeData.invoices.filter((inv) => inv.status === 'Issue').length;
 
 		if (suggestionStep === 'approve-trusted' && trustedCount > 0) {
-			return `Approve all ${trustedCount} trusted invoices?`;
+			return {
+				action: `Approve all ${trustedCount} trusted invoices?`,
+				reasoning:
+					'These vendors are in the approved list and amounts are under the $500 threshold.',
+				showNoButton: false
+			};
 		} else if (suggestionStep === 'queue-checks' && checkCount > 0) {
-			return `Queue all ${checkCount} check invoices?`;
+			return {
+				action: `Queue all ${checkCount} check invoices?`,
+				reasoning:
+					'These vendors require check payment processing. You can print the checks in the Check Queue tab.',
+				showNoButton: false
+			};
 		} else if (suggestionStep === 'handle-issues' && issueCount > 0) {
 			const issues = storeData.invoices.filter((inv) => inv.status === 'Issue');
 			const currentIssue = issues[0];
 
 			if (currentIssue.reason === 'New vendor not in trusted list') {
-				return `Add ${currentIssue.vendor} to trusted list and approve invoice.`;
+				return {
+					action: `Add ${currentIssue.vendor} to trusted list and approve invoice.`,
+					reasoning:
+						'This appears to be a legitimate new vendor that should be added to the approved list.',
+					showNoButton: true
+				};
 			} else if (currentIssue.reason === 'Missing date') {
-				return `Use date from email attachment and approve invoice.`;
+				return {
+					action: 'Use date from email attachment and approve invoice.',
+					reasoning: 'The invoice date can be found in the attached email document.',
+					showNoButton: true
+				};
 			} else if (currentIssue.reason === 'Missing invoice number') {
-				return `Use invoice number from email and approve invoice.`;
+				return {
+					action: 'Use invoice number from email and approve invoice.',
+					reasoning: 'The invoice number is available in the email content.',
+					showNoButton: true
+				};
 			} else if (currentIssue.reason === 'Duplicate invoice number') {
-				return `Send confirmation email to Green Gardens and reject for now.`;
+				return {
+					action: 'Send confirmation email to Green Gardens and reject for now.',
+					reasoning:
+						'This invoice number matches an existing record. Contact vendor for clarification.',
+					showNoButton: true
+				};
 			} else if (currentIssue.reason === 'Amount exceeds typical') {
-				return `Approve high-value invoice after review.`;
+				return {
+					action: 'Approve high-value invoice after review.',
+					reasoning:
+						'Amount is 3x higher than typical but appears legitimate based on vendor history.',
+					showNoButton: true
+				};
 			} else if (currentIssue.reason === 'Check vendor with electronic payment') {
-				return `Change payment type to check and approve invoice.`;
+				return {
+					action: 'Change payment type to check and approve invoice.',
+					reasoning: 'This vendor requires check payment despite electronic request.',
+					showNoButton: true
+				};
 			} else {
-				return `Review exception for ${currentIssue.vendor} - ${currentIssue.description}: ${currentIssue.reason}. Approve anyway?`;
+				return {
+					action: `Review exception for ${currentIssue.vendor} - ${currentIssue.description}: ${currentIssue.reason}. Approve anyway?`,
+					reasoning: 'Manual review required for this exception case.',
+					showNoButton: true
+				};
 			}
 		} else {
 			return null;
@@ -239,20 +279,31 @@
 				{#if currentSuggestion}
 					<div class="rounded border bg-blue-50 p-4">
 						<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
-						<p class="mt-2 text-blue-800">{currentSuggestion}</p>
-						<div class="mt-4 flex gap-2">
-							<button
-								class="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-								onclick={handleSuggestionYes}
-							>
-								Yes
-							</button>
-							<button
-								class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-								onclick={handleSuggestionNo}
-							>
-								No
-							</button>
+						<div class="mt-2 space-y-2">
+							<p class="font-medium text-blue-800">{currentSuggestion.action}</p>
+							<p class="text-sm text-blue-700">{currentSuggestion.reasoning}</p>
+							<div class="mt-3 flex gap-2">
+								<button
+									class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
+									onclick={handleSuggestionYes}
+								>
+									Yes
+								</button>
+								{#if currentSuggestion.showNoButton}
+									<button
+										class="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+										onclick={handleSuggestionNo}
+									>
+										No
+									</button>
+								{:else}
+									<button
+										class="rounded bg-gray-600 px-4 py-2 text-sm text-white hover:bg-gray-700"
+									>
+										Review Later
+									</button>
+								{/if}
+							</div>
 						</div>
 					</div>
 				{/if}
@@ -273,7 +324,8 @@
 					</select>
 
 					<button class="border px-4 py-2" onclick={handleApproveTrusted}>
-						Approve all Trusted ({storeData.invoices.filter((inv) => inv.status === 'Trusted').length})
+						Approve all Trusted ({storeData.invoices.filter((inv) => inv.status === 'Trusted')
+							.length})
 					</button>
 					<button class="border px-4 py-2" onclick={handleQueueChecks}>
 						Queue all Checks ({storeData.invoices.filter((inv) => inv.status === 'Check').length})
@@ -283,7 +335,7 @@
 				<!-- GRID-BASED "TABLE" (header is separate, no sticky-table bugs) -->
 				<div class="flex-1 overflow-hidden rounded border">
 					<div class="h-full overflow-x-auto">
-						<div class="min-w-[1200px] h-full flex flex-col">
+						<div class="flex h-full min-w-[1200px] flex-col">
 							<div class="grid border-b bg-white text-sm font-medium" style={gridStyle}>
 								<div class="p-2">Vendor</div>
 								<div class="p-2">Description</div>
@@ -321,7 +373,6 @@
 					</div>
 				</div>
 			</div>
-
 		{:else if activeTab === 'check-queue'}
 			<div class="flex h-full flex-col space-y-4">
 				<div class="flex items-center gap-4">
@@ -331,7 +382,7 @@
 
 				<div class="flex-1 overflow-hidden rounded border">
 					<div class="h-full overflow-x-auto">
-						<div class="min-w-[1200px] h-full flex flex-col">
+						<div class="flex h-full min-w-[1200px] flex-col">
 							<div class="grid border-b bg-white text-sm font-medium" style={gridStyle}>
 								<div class="p-2">Vendor</div>
 								<div class="p-2">Description</div>
@@ -369,7 +420,6 @@
 					</div>
 				</div>
 			</div>
-
 		{:else if activeTab === 'approved'}
 			<div class="flex h-full flex-col space-y-4">
 				<div>
@@ -379,7 +429,7 @@
 
 				<div class="flex-1 overflow-hidden rounded border">
 					<div class="h-full overflow-x-auto">
-						<div class="min-w-[1200px] h-full flex flex-col">
+						<div class="flex h-full min-w-[1200px] flex-col">
 							<div class="grid border-b bg-white text-sm font-medium" style={gridStyle}>
 								<div class="p-2">Vendor</div>
 								<div class="p-2">Description</div>
@@ -417,7 +467,6 @@
 					</div>
 				</div>
 			</div>
-
 		{:else if activeTab === 'rejected'}
 			<div class="flex h-full flex-col space-y-4">
 				<div>
@@ -429,7 +478,7 @@
 
 				<div class="flex-1 overflow-hidden rounded border">
 					<div class="h-full overflow-x-auto">
-						<div class="min-w-[1200px] h-full flex flex-col">
+						<div class="flex h-full min-w-[1200px] flex-col">
 							<div class="grid border-b bg-white text-sm font-medium" style={gridStyle}>
 								<div class="p-2">Vendor</div>
 								<div class="p-2">Description</div>

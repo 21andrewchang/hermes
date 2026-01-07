@@ -159,38 +159,102 @@
 			<!-- AI Suggestion -->
 			<div class="rounded border bg-blue-50 p-4">
 				<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
-				<p class="mt-2 text-blue-800">
+				<div class="mt-2 space-y-2">
 					{#if invoice.status === 'Trusted'}
-						Approve this trusted invoice?
+						<p class="font-medium text-blue-800">Approve this trusted invoice?</p>
+						<p class="text-sm text-blue-700">
+							This vendor is in the approved list and the amount is under the $500 threshold.
+						</p>
+						<div class="mt-3 flex gap-2">
+							<button class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700">
+								Yes, Approve
+							</button>
+							<button class="rounded bg-gray-600 px-4 py-2 text-sm text-white hover:bg-gray-700">
+								Review Later
+							</button>
+						</div>
 					{:else if invoice.status === 'Check'}
-						Queue this check invoice?
+						<p class="font-medium text-blue-800">Queue this check invoice?</p>
+						<p class="text-sm text-blue-700">This vendor requires check payment processing.</p>
+						<div class="mt-3 flex gap-2">
+							<button class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700">
+								Yes, Queue
+							</button>
+							<button class="rounded bg-gray-600 px-4 py-2 text-sm text-white hover:bg-gray-700">
+								Review Later
+							</button>
+						</div>
 					{:else if invoice.status === 'Issue'}
 						{#if invoice.reason === 'New vendor not in trusted list'}
-							Add {invoice.vendor} to trusted list and approve invoice.
+							<p class="font-medium text-blue-800">
+								Add {invoice.vendor} to trusted list and approve invoice.
+							</p>
+							<p class="text-sm text-blue-700">
+								This appears to be a legitimate new vendor that should be added to the approved
+								list.
+							</p>
 						{:else if invoice.reason === 'Missing date'}
-							Use date from email attachment and approve invoice.
+							<p class="font-medium text-blue-800">
+								Use date from email attachment and approve invoice.
+							</p>
+							<p class="text-sm text-blue-700">
+								The invoice date can be found in the attached email document.
+							</p>
 						{:else if invoice.reason === 'Missing invoice number'}
-							Use invoice number from email and approve invoice.
+							<p class="font-medium text-blue-800">
+								Use invoice number from email and approve invoice.
+							</p>
+							<p class="text-sm text-blue-700">
+								The invoice number is available in the email content.
+							</p>
 						{:else if invoice.reason === 'Duplicate invoice number'}
-							Send confirmation email to Green Gardens and reject for now.
+							<p class="font-medium text-blue-800">
+								Send confirmation email to Green Gardens and reject for now.
+							</p>
+							<p class="text-sm text-blue-700">
+								This invoice number matches an existing record. Contact vendor for clarification.
+							</p>
 						{:else if invoice.reason === 'Amount exceeds typical'}
-							Approve high-value invoice after review.
+							<p class="font-medium text-blue-800">Approve high-value invoice after review.</p>
+							<p class="text-sm text-blue-700">
+								Amount is 3x higher than typical but appears legitimate based on vendor history.
+							</p>
 						{:else if invoice.reason === 'Check vendor with electronic payment'}
-							Change payment type to check and approve invoice.
+							<p class="font-medium text-blue-800">
+								Change payment type to check and approve invoice.
+							</p>
+							<p class="text-sm text-blue-700">
+								This vendor requires check payment despite electronic request.
+							</p>
 						{:else}
-							Review exception for {invoice.vendor} - {invoice.description}: {invoice.reason}.
-							Approve anyway?
+							<p class="font-medium text-blue-800">
+								Review exception for {invoice.vendor} - {invoice.description}: {invoice.reason}.
+								Approve anyway?
+							</p>
+							<p class="text-sm text-blue-700">Manual review required for this exception case.</p>
 						{/if}
+						<div class="mt-3 flex gap-2">
+							<button class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700">
+								Yes
+							</button>
+							<button class="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700">
+								No
+							</button>
+						</div>
 					{:else if invoice.status === 'Approved'}
-						This invoice has been approved.
+						<p class="text-blue-800">
+							This invoice has been approved and is ready for payment processing.
+						</p>
 					{:else if invoice.status === 'Queued'}
-						This invoice is queued for check processing.
+						<p class="text-blue-800">This invoice is queued for check processing.</p>
 					{:else if invoice.status === 'Rejected'}
-						This invoice has been rejected.
+						<p class="text-blue-800">
+							This invoice has been rejected. Check the audit trail for details.
+						</p>
 					{:else}
-						Review this invoice.
+						<p class="text-blue-800">Review this invoice for processing.</p>
 					{/if}
-				</p>
+				</div>
 			</div>
 
 			<!-- PDF Placeholder -->
