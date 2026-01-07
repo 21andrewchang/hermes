@@ -207,7 +207,7 @@
 </script>
 
 <div class="flex h-screen flex-col bg-white text-black">
-	<header class="flex items-center gap-4 p-4 mb-1">
+	<header class="mb-1 flex items-center gap-4 p-4">
 		<img src={nexus} alt="Nexus" class="h-8 w-8" />
 		<svg width="1" height="24" class="rotate-20 transform text-stone-300">
 			<line x1="0.5" y1="0" x2="0.5" y2="24" stroke="currentColor" stroke-width="1" />
@@ -218,11 +218,13 @@
 	<nav class="border-b border-stone-200">
 		<div class="mx-4 mb-2 flex">
 			<button
-				class="px-4 py-2 {activeTab === 'inbox' ? 'rounded-md bg-stone-100' : ''}"
+				class="flex items-center gap-2 px-4 py-2 hover:bg-stone-50 {activeTab === 'inbox'
+					? 'rounded-md bg-stone-100'
+					: ''}"
 				onclick={() => (activeTab = 'inbox')}
 			>
 				Inbox
-				<span class="ml-2 rounded bg-stone-700 px-2 py-1 text-xs text-white">
+				<span class="rounded bg-stone-700 px-2 py-1 text-xs text-white">
 					{storeData.invoices.length -
 						storeData.approvedCount -
 						storeData.queuedCount -
@@ -230,19 +232,25 @@
 				</span>
 			</button>
 			<button
-				class="px-4 py-2 {activeTab === 'check-queue' ? 'rounded-md bg-stone-100' : ''}"
+				class="px-4 py-2 hover:bg-stone-50 {activeTab === 'check-queue'
+					? 'rounded-md bg-stone-100'
+					: ''}"
 				onclick={() => (activeTab = 'check-queue')}
 			>
 				Check Queue
 			</button>
 			<button
-				class="px-4 py-2 {activeTab === 'approved' ? 'rounded-md bg-stone-100' : ''}"
+				class="px-4 py-2 hover:bg-stone-50 {activeTab === 'approved'
+					? 'rounded-md bg-stone-100'
+					: ''}"
 				onclick={() => (activeTab = 'approved')}
 			>
 				Approved
 			</button>
 			<button
-				class="px-4 py-2 {activeTab === 'rejected' ? 'rounded-md bg-stone-100' : ''}"
+				class="px-4 py-2 hover:bg-stone-50 {activeTab === 'rejected'
+					? 'rounded-md bg-stone-100'
+					: ''}"
 				onclick={() => (activeTab = 'rejected')}
 			>
 				Rejected
