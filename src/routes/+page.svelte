@@ -9,6 +9,7 @@
 	} from '$lib/stores';
 	import type { Invoice } from '$lib/types';
 	import InvoiceDetail from '$lib/components/InvoiceDetail.svelte';
+	import nexus from '$lib/assets/nexus.svg';
 
 	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'approved' | 'rejected');
 
@@ -206,7 +207,13 @@
 </script>
 
 <div class="flex h-screen flex-col bg-white text-black">
-	<header class="p-4">NBK Property Management</header>
+	<header class="flex items-center gap-4 p-4 mb-1">
+		<img src={nexus} alt="Nexus" class="h-8 w-8" />
+		<svg width="1" height="24" class="rotate-20 transform text-stone-300">
+			<line x1="0.5" y1="0" x2="0.5" y2="24" stroke="currentColor" stroke-width="1" />
+		</svg>
+		<div class="text-lg">NBK Property Management</div>
+	</header>
 
 	<nav class="border-b border-stone-200">
 		<div class="mx-4 mb-2 flex">
