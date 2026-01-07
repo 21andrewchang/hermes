@@ -213,7 +213,7 @@
 </script>
 
 <div class="flex h-screen flex-col bg-white text-black">
-	<header class="mb-1 flex items-center justify-between p-4">
+	<header class="flex items-center justify-between p-4 pb-1">
 		<div class="flex flex-row items-center gap-4">
 			<img src={nexus} alt="Nexus" class="h-8 w-8" />
 			<svg width="1" height="18" class="rotate-20 transform text-stone-300">
@@ -353,15 +353,15 @@
 						<input
 							type="text"
 							placeholder="Search invoices..."
-							class="text-md w-full rounded-md border border-stone-300 p-4 pl-10 focus:outline-none"
+							class="text-md w-full rounded-md border border-stone-300 p-4 py-3 pl-10 focus:outline-none"
 							bind:value={searchQuery}
 						/>
 					</div>
 					{#if currentSuggestion}
 						<div
-							class="flex w-3/4 items-center gap-2 rounded-md border border-blue-700 bg-blue-50 p-4"
+							class="flex h-full w-3/4 items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4"
 						>
-							<span class="font-semibold text-blue-900 flex flex-row items-center gap-2">
+							<span class="flex flex-row items-center gap-2 font-semibold text-blue-900">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									width="16"
@@ -378,13 +378,13 @@
 							>
 							<div class="ml-auto flex gap-2">
 								<button
-									class="rounded bg-green-600 px-2 py-1 text-sm text-white transition hover:bg-green-700 focus:outline-none"
+									class="flex h-8 items-center justify-center rounded bg-green-600 px-2 text-sm text-white transition hover:bg-green-700 focus:outline-none"
 									onclick={handleSuggestionYes}
 								>
-									Yes
+									Accept
 								</button>
 								<button
-									class="rounded bg-gray-600 px-2 py-1 text-sm text-white hover:bg-gray-700 focus:outline-none"
+									class="flex h-8 items-center justify-center rounded bg-gray-600 px-2 text-sm text-white hover:bg-gray-700 focus:outline-none"
 									onclick={handleSuggestionNo}
 								>
 									Review Later
