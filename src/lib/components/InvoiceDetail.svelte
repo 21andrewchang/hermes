@@ -131,34 +131,34 @@
 				<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
 				<p class="mt-2 text-blue-800">
 					{#if invoice.status === 'Trusted'}
-						This invoice appears to be from a trusted vendor with typical payment amounts. Ready for
-						approval.
+						Approve this trusted invoice?
+					{:else if invoice.status === 'Check'}
+						Queue this check invoice?
 					{:else if invoice.status === 'Issue'}
 						{#if invoice.reason === 'New vendor not in trusted list'}
-							Consider adding {invoice.vendor} to the trusted vendor list and approving this invoice.
+							Add {invoice.vendor} to trusted list and approve invoice.
 						{:else if invoice.reason === 'Missing date'}
-							The invoice date appears to be missing. Check the email attachment for the correct
-							date.
+							Use date from email attachment and approve invoice.
+						{:else if invoice.reason === 'Missing invoice number'}
+							Use invoice number from email and approve invoice.
 						{:else if invoice.reason === 'Duplicate invoice number'}
-							This appears to be a duplicate invoice. Contact the vendor to confirm before
-							rejecting.
+							Send confirmation email to Green Gardens and reject for now.
 						{:else if invoice.reason === 'Amount exceeds typical'}
-							The amount is significantly higher than typical for this vendor. Review carefully
-							before approval.
+							Approve high-value invoice after review.
 						{:else if invoice.reason === 'Check vendor with electronic payment'}
-							This vendor typically uses check payments but this invoice specifies electronic.
-							Change to check payment.
+							Change payment type to check and approve invoice.
 						{:else}
-							This invoice has issues that need manual review before processing.
+							Review exception for {invoice.vendor} - {invoice.description}: {invoice.reason}.
+							Approve anyway?
 						{/if}
 					{:else if invoice.status === 'Approved'}
-						This invoice has been approved and is ready for payment processing.
+						This invoice has been approved.
 					{:else if invoice.status === 'Queued'}
 						This invoice is queued for check processing.
 					{:else if invoice.status === 'Rejected'}
-						This invoice has been rejected. Check the audit trail for details.
+						This invoice has been rejected.
 					{:else}
-						Review this invoice for processing.
+						Review this invoice.
 					{/if}
 				</p>
 			</div>
