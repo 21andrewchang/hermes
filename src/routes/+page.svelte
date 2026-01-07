@@ -215,18 +215,16 @@
 </script>
 
 <div class="flex h-screen flex-col bg-white text-black">
-	<header class="p-4">
-		NBK Property Management
-	</header>
+	<header class="p-4">NBK Property Management</header>
 
 	<nav class="border-b border-stone-200">
-		<div class="flex mb-2 mx-4">
+		<div class="mx-4 mb-2 flex">
 			<button
-				class="px-4 py-2 {activeTab === 'inbox' ? 'bg-stone-100 rounded-md' : ''}"
+				class="px-4 py-2 {activeTab === 'inbox' ? 'rounded-md bg-stone-100' : ''}"
 				onclick={() => (activeTab = 'inbox')}
 			>
 				Inbox
-				<span class="text-xs ml-2 rounded bg-stone-700 px-2 py-1 text-white">
+				<span class="ml-2 rounded bg-stone-700 px-2 py-1 text-xs text-white">
 					{storeData.invoices.length -
 						storeData.approvedCount -
 						storeData.queuedCount -
@@ -257,46 +255,43 @@
 	<main class="flex-1 overflow-hidden p-4 px-20">
 		{#if activeTab === 'inbox'}
 			<div class="flex h-full flex-col space-y-4">
-				{#if currentSuggestion}
-					<div class="rounded border border-blue-200 bg-blue-50 p-4">
-						<h3 class="font-semibold text-blue-900">AI Suggestion: {currentSuggestion.action}</h3>
-						<div class="mt-2 space-y-2">
-							<p class="text-sm text-blue-700">{currentSuggestion.reasoning}</p>
-							<div class="mt-3 flex gap-2">
+				<div class="flex items-center gap-4">
+					{#if currentSuggestion}
+						<div class="flex flex-1 items-center gap-2 bg-blue-50 p-3 rounded-md border-blue-900 border">
+							<span class="font-semibold text-blue-900"
+								>AI Suggestion: {currentSuggestion.action}</span
+							>
+							<div class="ml-auto flex gap-2">
 								<button
-									class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 transition"
+									class="rounded bg-green-600 px-2 py-1 text-sm text-white transition hover:bg-green-700"
 									onclick={handleSuggestionYes}
 								>
 									Yes
 								</button>
 								{#if currentSuggestion.showNoButton}
 									<button
-										class="rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
+										class="rounded bg-red-600 px-2 py-1 text-sm text-white hover:bg-red-700"
 										onclick={handleSuggestionNo}
 									>
 										No
 									</button>
 								{:else}
 									<button
-										class="rounded bg-gray-600 px-4 py-2 text-sm text-white hover:bg-gray-700"
+										class="rounded bg-gray-600 px-2 py-1 text-sm text-white hover:bg-gray-700"
 									>
 										Review Later
 									</button>
 								{/if}
 							</div>
 						</div>
-					</div>
-				{/if}
-
-				<div class="flex items-center gap-4">
+					{/if}
 					<input
 						type="text"
 						placeholder="Search invoices..."
-						class="rounded border p-2"
+						class="rounded border p-4 text-md"
 						bind:value={searchQuery}
 					/>
-					<label for="status-filter" class="text-sm font-medium">Filter:</label>
-					<select id="status-filter" class="rounded border p-2" bind:value={filter}>
+					<select id="status-filter" class="rounded border p-4" bind:value={filter}>
 						<option value="all">All</option>
 						<option value="trusted">Trusted</option>
 						<option value="check">Check</option>
@@ -308,7 +303,10 @@
 				<div class="flex-1 overflow-hidden rounded border border-stone-300">
 					<div class="h-full overflow-x-auto">
 						<div class="flex h-full min-w-[1200px] flex-col">
-							<div class="grid border-b bg-white text-sm font-medium border-stone-300" style={gridStyle}>
+							<div
+								class="grid border-b border-stone-300 bg-white text-sm font-medium"
+								style={gridStyle}
+							>
 								<div class="p-2">Vendor</div>
 								<div class="p-2">Description</div>
 								<div class="p-2">Date</div>
@@ -322,7 +320,7 @@
 							<div class="flex-1 overflow-y-auto">
 								{#each filteredInvoices as invoice (invoice.id)}
 									<div
-										class="grid cursor-pointer border-b hover:bg-gray-50 border-stone-300"
+										class="grid cursor-pointer border-b border-stone-300 hover:bg-gray-50"
 										style={gridStyle}
 										onclick={() => openInvoiceDetail(invoice)}
 									>
