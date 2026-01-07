@@ -168,19 +168,11 @@
 		}
 	});
 
-	function handleApproveTrusted() {
-		approveTrusted();
-	}
-
-	function handleQueueChecks() {
-		queueChecks();
-	}
-
 	function handleSuggestionYes() {
 		if (suggestionStep === 'approve-trusted') {
-			handleApproveTrusted();
+			approveTrusted();
 		} else if (suggestionStep === 'queue-checks') {
-			handleQueueChecks();
+			queueChecks();
 		} else if (suggestionStep === 'handle-issues') {
 			const currentIssues = storeData.invoices.filter((inv) => inv.status === 'Issue');
 			if (currentIssues.length > 0) {
@@ -322,14 +314,6 @@
 						<option value="check">Check</option>
 						<option value="issue">Issue</option>
 					</select>
-
-					<button class="border px-4 py-2" onclick={handleApproveTrusted}>
-						Approve all Trusted ({storeData.invoices.filter((inv) => inv.status === 'Trusted')
-							.length})
-					</button>
-					<button class="border px-4 py-2" onclick={handleQueueChecks}>
-						Queue all Checks ({storeData.invoices.filter((inv) => inv.status === 'Check').length})
-					</button>
 				</div>
 
 				<!-- GRID-BASED "TABLE" (header is separate, no sticky-table bugs) -->
