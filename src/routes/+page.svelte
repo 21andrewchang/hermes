@@ -247,42 +247,49 @@
 		{#if activeTab === 'inbox'}
 			<div class="flex h-full flex-col space-y-4">
 				<div class="flex items-center gap-4">
+					<div class="relative flex w-1/4">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="16"
+							height="16"
+							fill="currentColor"
+							class="bi bi-search absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform text-gray-400"
+							viewBox="0 0 16 16"
+						>
+							<path
+								d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"
+							/>
+						</svg>
+						<input
+							type="text"
+							placeholder="Search invoices..."
+							class="text-md w-full rounded-md border border-stone-300 p-4 pl-10 focus:outline-none"
+							bind:value={searchQuery}
+						/>
+					</div>
 					{#if currentSuggestion}
 						<div
-							class="flex flex-1 items-center gap-2 rounded-md border border-blue-900 bg-blue-50 p-4"
+							class="flex w-3/4 items-center gap-2 rounded-md border border-blue-700 bg-blue-50 p-4"
 						>
 							<span class="font-semibold text-blue-900"
 								>AI Suggestion: {currentSuggestion.action}</span
 							>
 							<div class="ml-auto flex gap-2">
 								<button
-									class="rounded bg-green-600 px-2 py-1 text-sm text-white transition hover:bg-green-700"
+									class="rounded bg-green-600 px-2 py-1 text-sm text-white transition hover:bg-green-700 focus:outline-none"
 									onclick={handleSuggestionYes}
 								>
 									Yes
 								</button>
-								<button class="rounded bg-gray-600 px-2 py-1 text-sm text-white hover:bg-gray-700">
+								<button
+									class="rounded bg-gray-600 px-2 py-1 text-sm text-white hover:bg-gray-700 focus:outline-none"
+									onclick={handleSuggestionNo}
+								>
 									Review Later
 								</button>
 							</div>
 						</div>
 					{/if}
-					<input
-						type="text"
-						placeholder="Search invoices..."
-						class="text-md rounded-md border border-stone-300 p-4"
-						bind:value={searchQuery}
-					/>
-					<select
-						id="status-filter"
-						class="rounded-md border border-stone-300 p-4"
-						bind:value={filter}
-					>
-						<option value="all">All</option>
-						<option value="trusted">Trusted</option>
-						<option value="check">Check</option>
-						<option value="issue">Issue</option>
-					</select>
 				</div>
 
 				<!-- GRID-BASED "TABLE" (header is separate, no sticky-table bugs) -->
