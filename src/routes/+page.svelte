@@ -218,9 +218,7 @@
 	<nav class="border-b border-stone-200">
 		<div class="mx-4 mb-2 flex">
 			<button
-				class="flex items-center gap-2 px-4 py-2 hover:bg-stone-50 {activeTab === 'inbox'
-					? 'rounded-md bg-stone-100'
-					: ''}"
+				class="flex items-center gap-2 px-4 py-2 hover:rounded-md hover:bg-stone-50"
 				onclick={() => (activeTab = 'inbox')}
 			>
 				Inbox
@@ -232,25 +230,19 @@
 				</span>
 			</button>
 			<button
-				class="px-4 py-2 hover:bg-stone-50 {activeTab === 'check-queue'
-					? 'rounded-md bg-stone-100'
-					: ''}"
+				class="px-4 py-2 hover:rounded-md hover:bg-stone-50"
 				onclick={() => (activeTab = 'check-queue')}
 			>
 				Check Queue
 			</button>
 			<button
-				class="px-4 py-2 hover:bg-stone-50 {activeTab === 'approved'
-					? 'rounded-md bg-stone-100'
-					: ''}"
+				class="px-4 py-2 hover:rounded-md hover:bg-stone-50"
 				onclick={() => (activeTab = 'approved')}
 			>
 				Approved
 			</button>
 			<button
-				class="px-4 py-2 hover:bg-stone-50 {activeTab === 'rejected'
-					? 'rounded-md bg-stone-100'
-					: ''}"
+				class="px-4 py-2 hover:rounded-md hover:bg-stone-50"
 				onclick={() => (activeTab = 'rejected')}
 			>
 				Rejected
