@@ -8,6 +8,7 @@
 		rejectIssue
 	} from '$lib/stores';
 	import type { Invoice } from '$lib/types';
+	import InvoiceDetail from '$lib/components/InvoiceDetail.svelte';
 
 	let activeTab = $state('inbox' as 'inbox' | 'check-queue' | 'approved' | 'rejected');
 	let filter = $state('all' as 'all' | 'trusted' | 'check' | 'issue' | 'approved' | 'queued');
@@ -22,6 +23,8 @@
 		issueCount: 0,
 		rejectedCount: 0
 	});
+	let selectedInvoice = $state<Invoice | null>(null);
+	let isDrawerOpen = $state(false);
 
 	let filteredInvoices = $derived.by(() => {
 		let invoices = storeData.invoices.filter(
@@ -142,6 +145,16 @@
 			// Do nothing for no, stays on the first issue
 		}
 	}
+
+	function openInvoiceDetail(invoice: Invoice) {
+		selectedInvoice = invoice;
+		isDrawerOpen = true;
+	}
+
+	function closeInvoiceDetail() {
+		isDrawerOpen = false;
+		selectedInvoice = null;
+	}
 </script>
 
 <div class="min-h-screen bg-white text-black">
@@ -260,7 +273,10 @@
 						</thead>
 						<tbody>
 							{#each filteredInvoices as invoice (invoice.id)}
-								<tr class="border-b hover:bg-gray-50">
+								<tr
+									class="cursor-pointer border-b hover:bg-gray-50"
+									onclick={() => openInvoiceDetail(invoice)}
+								>
 									<td class="p-2">{invoice.vendor}</td>
 									<td class="p-2">{invoice.description}</td>
 									<td class="p-2">{invoice.date}</td>
@@ -307,7 +323,10 @@
 						</thead>
 						<tbody>
 							{#each storeData.invoices.filter((inv) => inv.status === 'Queued') as invoice (invoice.id)}
-								<tr class="border-b hover:bg-gray-50">
+								<tr
+									class="cursor-pointer border-b hover:bg-gray-50"
+									onclick={() => openInvoiceDetail(invoice)}
+								>
 									<td class="p-2">{invoice.vendor}</td>
 									<td class="p-2">{invoice.description}</td>
 									<td class="p-2">{invoice.date}</td>
@@ -345,7 +364,10 @@
 					</thead>
 					<tbody>
 						{#each storeData.invoices.filter((inv) => inv.status === 'Approved') as invoice (invoice.id)}
-							<tr class="border-b hover:bg-gray-50">
+							<tr
+								class="cursor-pointer border-b hover:bg-gray-50"
+								onclick={() => openInvoiceDetail(invoice)}
+							>
 								<td class="p-2">{invoice.vendor}</td>
 								<td class="p-2">{invoice.description}</td>
 								<td class="p-2">{invoice.date}</td>
@@ -436,7 +458,10 @@
 					</thead>
 					<tbody>
 						{#each storeData.invoices.filter((inv) => inv.status === 'Rejected') as invoice (invoice.id)}
-							<tr class="border-b hover:bg-gray-50">
+							<tr
+								class="cursor-pointer border-b hover:bg-gray-50"
+								onclick={() => openInvoiceDetail(invoice)}
+							>
 								<td class="p-2">{invoice.vendor}</td>
 								<td class="p-2">{invoice.description}</td>
 								<td class="p-2">{invoice.date}</td>
@@ -454,4 +479,6 @@
 			</div>
 		{/if}
 	</main>
+
+	<InvoiceDetail invoice={selectedInvoice} open={isDrawerOpen} onClose={closeInvoiceDetail} />
 </div>
