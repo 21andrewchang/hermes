@@ -211,6 +211,26 @@
 	<main class="p-4">
 		{#if activeTab === 'inbox'}
 			<div class="space-y-4">
+				{#if currentSuggestion}
+					<div class="rounded border bg-blue-50 p-4">
+						<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
+						<p class="mt-2 text-blue-800">{currentSuggestion}</p>
+						<div class="mt-4 flex gap-2">
+							<button
+								class="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
+								onclick={handleSuggestionYes}
+							>
+								Yes
+							</button>
+							<button
+								class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+								onclick={handleSuggestionNo}
+							>
+								No
+							</button>
+						</div>
+					</div>
+				{/if}
 				<div class="sticky top-0 flex items-center gap-4 bg-white pb-4">
 					<input
 						type="text"
@@ -234,26 +254,6 @@
 						Queue all Checks ({storeData.invoices.filter((inv) => inv.status === 'Check').length})
 					</button>
 				</div>
-				{#if currentSuggestion}
-					<div class="rounded border bg-blue-50 p-4">
-						<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
-						<p class="mt-2 text-blue-800">{currentSuggestion}</p>
-						<div class="mt-4 flex gap-2">
-							<button
-								class="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-								onclick={handleSuggestionYes}
-							>
-								Yes
-							</button>
-							<button
-								class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
-								onclick={handleSuggestionNo}
-							>
-								No
-							</button>
-						</div>
-					</div>
-				{/if}
 
 				<div class="overflow-y-auto" style="height: calc(100vh - 200px);">
 					<!-- Placeholder for invoice table -->
