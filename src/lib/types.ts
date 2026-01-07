@@ -9,7 +9,7 @@ export interface Invoice {
 	status: 'Trusted' | 'Check' | 'Issue' | 'Approved' | 'Queued' | 'Rejected';
 	reason: string; // One-line explanation for status
 	auditTrail: string[]; // Array of decision strings
-	source: 'email' | 'text'; // How the invoice was received
+	source: 'Email' | 'Text'; // How the invoice was received
 	sourceMessage: string; // The original message content
 	// Additional fields for issues
 	duplicateId?: string;

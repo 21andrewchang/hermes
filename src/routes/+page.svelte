@@ -221,7 +221,7 @@
 			</svg>
 			<div class="text-md">NBK Property Management</div>
 		</div>
-		<div class="flex flex-row items-center gap-2">
+		<div class="flex flex-row items-center gap-3">
 			<button
 				class="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white hover:bg-stone-50"
 			>
@@ -248,7 +248,7 @@
 
 	<nav class="relative border-b border-stone-200" bind:this={navElement}>
 		<div
-			class="absolute rounded-md bg-stone-50 transition-all duration-300 ease-in-out"
+			class="absolute rounded-md bg-stone-100 transition-all duration-300 ease-in-out"
 			style="left: {bgLeft}px; top: 8px; height: calc(100% - 16px); width: {bgWidth}px; opacity: {bgOpacity}"
 		></div>
 		<div class="mx-4 mt-2 mb-2 flex">
