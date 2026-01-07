@@ -101,14 +101,14 @@
 
 		if (suggestionStep === 'approve-trusted' && trustedCount > 0) {
 			return {
-				action: `Approve all ${trustedCount} trusted invoices?`,
+				action: `Approve all ${trustedCount} trusted invoices.`,
 				reasoning:
 					'These vendors are in the approved list and amounts are under the $500 threshold.',
 				showNoButton: false
 			};
 		} else if (suggestionStep === 'queue-checks' && checkCount > 0) {
 			return {
-				action: `Queue all ${checkCount} check invoices?`,
+				action: `Queue all ${checkCount} check invoices.`,
 				reasoning:
 					'These vendors require check payment processing. You can print the checks in the Check Queue tab.',
 				showNoButton: false
@@ -215,24 +215,18 @@
 </script>
 
 <div class="flex h-screen flex-col bg-white text-black">
-	<header class="border-b p-4">
-		<h1 class="text-2xl font-bold">Invoice Automation Demo</h1>
-		<div class="mt-2 flex gap-4">
-			<span>Total: {storeData.invoices.length}</span>
-			<span>Approved: {storeData.approvedCount}</span>
-			<span>Queued: {storeData.queuedCount}</span>
-			<span>Issues: {storeData.issueCount}</span>
-		</div>
+	<header class="p-4">
+		NBK Property Management
 	</header>
 
-	<nav class="border-b">
-		<div class="flex">
+	<nav class="border-b border-stone-200">
+		<div class="flex mb-2 mx-4">
 			<button
-				class="px-4 py-2 {activeTab === 'inbox' ? 'border-b-2 border-black' : ''}"
+				class="px-4 py-2 {activeTab === 'inbox' ? 'bg-stone-100 rounded-md' : ''}"
 				onclick={() => (activeTab = 'inbox')}
 			>
 				Inbox
-				<span class="ml-2 rounded bg-black px-2 py-1 text-white">
+				<span class="text-xs ml-2 rounded bg-stone-800 px-2 py-1 text-white">
 					{storeData.invoices.length -
 						storeData.approvedCount -
 						storeData.queuedCount -
@@ -240,39 +234,38 @@
 				</span>
 			</button>
 			<button
-				class="px-4 py-2 {activeTab === 'check-queue' ? 'border-b-2 border-black' : ''}"
+				class="px-4 py-2 {activeTab === 'check-queue' ? 'rounded-md bg-stone-100' : ''}"
 				onclick={() => (activeTab = 'check-queue')}
 			>
 				Check Queue
-				<span class="ml-2 rounded bg-black px-2 py-1 text-white">{storeData.queuedCount}</span>
+				<span class="ml-2 rounded bg-stone-800 px-2 text-xs py-1 text-white">{storeData.queuedCount}</span>
 			</button>
 			<button
-				class="px-4 py-2 {activeTab === 'approved' ? 'border-b-2 border-black' : ''}"
+				class="px-4 py-2 {activeTab === 'approved' ? 'rounded-md bg-stone-100' : ''}"
 				onclick={() => (activeTab = 'approved')}
 			>
 				Approved
-				<span class="ml-2 rounded bg-black px-2 py-1 text-white">{storeData.approvedCount}</span>
+				<span class="text-xs ml-2 rounded bg-stone-800 px-2 py-1 text-white">{storeData.approvedCount}</span>
 			</button>
 			<button
-				class="px-4 py-2 {activeTab === 'rejected' ? 'border-b-2 border-black' : ''}"
+				class="px-4 py-2 {activeTab === 'rejected' ? 'rounded-md bg-stone-100' : ''}"
 				onclick={() => (activeTab = 'rejected')}
 			>
 				Rejected
-				<span class="ml-2 rounded bg-red-600 px-2 py-1 text-white">
+				<span class="text-xs ml-2 rounded bg-red-500 px-2 py-1 text-white">
 					{storeData.invoices.filter((inv) => inv.status === 'Rejected').length}
 				</span>
 			</button>
 		</div>
 	</nav>
 
-	<main class="flex-1 overflow-hidden p-4">
+	<main class="flex-1 overflow-hidden p-4 px-20">
 		{#if activeTab === 'inbox'}
 			<div class="flex h-full flex-col space-y-4">
 				{#if currentSuggestion}
-					<div class="rounded border bg-blue-50 p-4">
-						<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
+					<div class="rounded border border-blue-200 bg-blue-50 p-4">
+						<h3 class="font-semibold text-blue-900">AI Suggestion: {currentSuggestion.action}</h3>
 						<div class="mt-2 space-y-2">
-							<p class="font-medium text-blue-800">{currentSuggestion.action}</p>
 							<p class="text-sm text-blue-700">{currentSuggestion.reasoning}</p>
 							<div class="mt-3 flex gap-2">
 								<button
