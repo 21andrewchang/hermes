@@ -125,6 +125,67 @@
 					</div>
 				{/if}
 			{/if}
+
+			<!-- AI Suggestion -->
+			<div class="rounded border bg-blue-50 p-4">
+				<h3 class="font-semibold text-blue-900">AI Suggestion</h3>
+				<p class="mt-2 text-blue-800">
+					{#if invoice.status === 'Trusted'}
+						This invoice appears to be from a trusted vendor with typical payment amounts. Ready for
+						approval.
+					{:else if invoice.status === 'Issue'}
+						{#if invoice.reason === 'New vendor not in trusted list'}
+							Consider adding {invoice.vendor} to the trusted vendor list and approving this invoice.
+						{:else if invoice.reason === 'Missing date'}
+							The invoice date appears to be missing. Check the email attachment for the correct
+							date.
+						{:else if invoice.reason === 'Duplicate invoice number'}
+							This appears to be a duplicate invoice. Contact the vendor to confirm before
+							rejecting.
+						{:else if invoice.reason === 'Amount exceeds typical'}
+							The amount is significantly higher than typical for this vendor. Review carefully
+							before approval.
+						{:else if invoice.reason === 'Check vendor with electronic payment'}
+							This vendor typically uses check payments but this invoice specifies electronic.
+							Change to check payment.
+						{:else}
+							This invoice has issues that need manual review before processing.
+						{/if}
+					{:else if invoice.status === 'Approved'}
+						This invoice has been approved and is ready for payment processing.
+					{:else if invoice.status === 'Queued'}
+						This invoice is queued for check processing.
+					{:else if invoice.status === 'Rejected'}
+						This invoice has been rejected. Check the audit trail for details.
+					{:else}
+						Review this invoice for processing.
+					{/if}
+				</p>
+			</div>
+
+			<!-- PDF Placeholder -->
+			<div>
+				<label class="mb-2 block text-sm font-medium text-gray-700">Invoice Document</label>
+				<div class="flex h-96 items-center justify-center rounded-lg bg-gray-200">
+					<div class="text-center text-gray-500">
+						<svg
+							class="mx-auto h-12 w-12 text-gray-400"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							></path>
+						</svg>
+						<p class="mt-2 text-sm">PDF Preview</p>
+						<p class="text-xs">Document viewer will be implemented</p>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 {/if}
