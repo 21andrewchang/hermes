@@ -226,7 +226,7 @@
 				onclick={() => (activeTab = 'inbox')}
 			>
 				Inbox
-				<span class="text-xs ml-2 rounded bg-stone-800 px-2 py-1 text-white">
+				<span class="text-xs ml-2 rounded bg-stone-700 px-2 py-1 text-white">
 					{storeData.invoices.length -
 						storeData.approvedCount -
 						storeData.queuedCount -
@@ -238,23 +238,18 @@
 				onclick={() => (activeTab = 'check-queue')}
 			>
 				Check Queue
-				<span class="ml-2 rounded bg-stone-800 px-2 text-xs py-1 text-white">{storeData.queuedCount}</span>
 			</button>
 			<button
 				class="px-4 py-2 {activeTab === 'approved' ? 'rounded-md bg-stone-100' : ''}"
 				onclick={() => (activeTab = 'approved')}
 			>
 				Approved
-				<span class="text-xs ml-2 rounded bg-stone-800 px-2 py-1 text-white">{storeData.approvedCount}</span>
 			</button>
 			<button
 				class="px-4 py-2 {activeTab === 'rejected' ? 'rounded-md bg-stone-100' : ''}"
 				onclick={() => (activeTab = 'rejected')}
 			>
 				Rejected
-				<span class="text-xs ml-2 rounded bg-red-500 px-2 py-1 text-white">
-					{storeData.invoices.filter((inv) => inv.status === 'Rejected').length}
-				</span>
 			</button>
 		</div>
 	</nav>
@@ -269,7 +264,7 @@
 							<p class="text-sm text-blue-700">{currentSuggestion.reasoning}</p>
 							<div class="mt-3 flex gap-2">
 								<button
-									class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700"
+									class="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 transition"
 									onclick={handleSuggestionYes}
 								>
 									Yes
@@ -310,10 +305,10 @@
 				</div>
 
 				<!-- GRID-BASED "TABLE" (header is separate, no sticky-table bugs) -->
-				<div class="flex-1 overflow-hidden rounded border">
+				<div class="flex-1 overflow-hidden rounded border border-stone-300">
 					<div class="h-full overflow-x-auto">
 						<div class="flex h-full min-w-[1200px] flex-col">
-							<div class="grid border-b bg-white text-sm font-medium" style={gridStyle}>
+							<div class="grid border-b bg-white text-sm font-medium border-stone-300" style={gridStyle}>
 								<div class="p-2">Vendor</div>
 								<div class="p-2">Description</div>
 								<div class="p-2">Date</div>
@@ -327,7 +322,7 @@
 							<div class="flex-1 overflow-y-auto">
 								{#each filteredInvoices as invoice (invoice.id)}
 									<div
-										class="grid cursor-pointer border-b hover:bg-gray-50"
+										class="grid cursor-pointer border-b hover:bg-gray-50 border-stone-300"
 										style={gridStyle}
 										onclick={() => openInvoiceDetail(invoice)}
 									>
