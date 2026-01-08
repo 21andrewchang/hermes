@@ -219,7 +219,7 @@
 			<svg width="1" height="18" class="rotate-20 transform text-stone-300">
 				<line x1="0.5" y1="0" x2="0.5" y2="24" stroke="currentColor" stroke-width="1" />
 			</svg>
-			<div class="text-md">NBK Property Management</div>
+			<div class="text-md">Hermes Internal Tool</div>
 		</div>
 		<div class="flex flex-row items-center gap-3">
 			<button
@@ -239,9 +239,9 @@
 				</svg>
 			</button>
 			<div
-				class="flex h-8 w-8 items-center justify-center rounded-full border border-green-900 bg-green-800 text-sm text-white"
+				class="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-stone-50 text-sm text-stone-700"
 			>
-				AW
+				GG
 			</div>
 		</div>
 	</header>

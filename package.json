@@ -4,12 +4,12 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"dev": "node ./node_modules/vite/bin/vite.js dev",
+		"build": "node ./node_modules/vite/bin/vite.js build",
+		"preview": "node ./node_modules/vite/bin/vite.js preview",
+		"prepare": "node ./node_modules/@sveltejs/kit/svelte-kit.js sync || echo ''",
+		"check": "node ./node_modules/@sveltejs/kit/svelte-kit.js sync && node ./node_modules/svelte-check/bin/svelte-check.js --tsconfig ./tsconfig.json",
+		"check:watch": "node ./node_modules/@sveltejs/kit/svelte-kit.js sync && node ./node_modules/svelte-check/bin/svelte-check.js --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint ."
 	},
