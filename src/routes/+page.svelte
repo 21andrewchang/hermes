@@ -36,10 +36,10 @@
 		unit: string;
 		description: string;
 		action: string;
-		status: 'Todo' | 'In Progress' | 'Needs Approval' | 'Complete' | 'Flagged';
+		status: 'Needs Approval' | 'In Progress' | 'Complete';
 	}
 
-	const statusOptions: TableEntry['status'][] = ['Todo', 'In Progress', 'Needs Approval', 'Complete', 'Flagged'];
+	const statusOptions: TableEntry['status'][] = ['Needs Approval', 'In Progress', 'Complete'];
 
 	const initialEntries: TableEntry[] = [
 		{
@@ -72,7 +72,7 @@
 			unit: '5',
 			description: 'Bathroom shower door broken',
 			action: '',
-			status: 'Todo'
+			status: 'Needs Approval'
 		},
 		{
 			time: '1/5/2026 9:27:02',
@@ -100,14 +100,18 @@
 		}
 	];
 
-	let entries = $state([...initialEntries]);
+	const statusRank: Record<TableEntry['status'], number> = {
+		'Needs Approval': 0,
+		'In Progress': 1,
+		Complete: 2
+	};
+
+	let entries = $state([...initialEntries].sort((a, b) => statusRank[a.status] - statusRank[b.status]));
 	let openStatusIndex = $state<number | null>(null);
 
 	function statusStyles(status: TableEntry['status']): string {
-		if (status === 'Todo') return 'bg-stone-200 text-stone-800';
-		if (status === 'In Progress') return 'bg-blue-100 text-blue-800';
 		if (status === 'Needs Approval') return 'bg-amber-100 text-amber-800';
-		if (status === 'Flagged') return 'bg-red-100 text-red-800';
+		if (status === 'In Progress') return 'bg-blue-100 text-blue-800';
 		return 'bg-emerald-100 text-emerald-800';
 	}
 
@@ -116,7 +120,8 @@
 	}
 
 	function updateStatus(targetIndex: number, status: TableEntry['status']) {
-		entries = entries.map((entry, index) => (index === targetIndex ? { ...entry, status } : entry));
+		const updated = entries.map((entry, index) => (index === targetIndex ? { ...entry, status } : entry));
+		entries = updated.sort((a, b) => statusRank[a.status] - statusRank[b.status]);
 	}
 
 	$effect(() => {
