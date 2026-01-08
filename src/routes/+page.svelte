@@ -37,9 +37,12 @@
 		description: string;
 		action: string;
 		status: 'Pending' | 'In Progress' | 'Complete';
+		isDraft?: boolean;
 	}
 
 	const statusOptions: TableEntry['status'][] = ['Pending', 'In Progress', 'Complete'];
+	type EditableField = 'building' | 'unit' | 'description' | 'action';
+
 	interface ChatMessage {
 		id: number;
 		role: 'user' | 'assistant';
@@ -112,26 +115,64 @@
 		Complete: 2
 	};
 
-	let entries = $state(
-		[...initialEntries].sort((a, b) => statusRank[a.status] - statusRank[b.status])
-	);
+	function sortEntries(list: TableEntry[]): TableEntry[] {
+		return [...list].sort((a, b) => {
+			if (a.isDraft && !b.isDraft) return 1;
+			if (!a.isDraft && b.isDraft) return -1;
+			return statusRank[a.status] - statusRank[b.status];
+		});
+	}
+
+	let entries = $state(sortEntries(initialEntries));
 	let openStatusIndex = $state<number | null>(null);
+	const hasDraftEntry = $derived(entries.some((entry) => entry.isDraft));
+
 	const conversation: ChatMessage[] = [
 		{
 			id: 1,
+			role: 'assistant',
+			content: 'Hi Esther! Need help summarizing today’s property issues?',
+			timestamp: '09:12'
+		},
+		{
+			id: 2,
 			role: 'user',
 			content: 'Give me the quick takeaways for Mariposa.',
 			timestamp: '09:14'
 		},
 		{
-			id: 2,
+			id: 3,
 			role: 'assistant',
 			content:
 				'Four open tickets: two dishwashers awaiting vendor confirmation, one gas leak resolved, one shower repair pending approval.',
 			timestamp: '09:14'
 		}
 	];
+
 	let chatInput = $state('');
+
+	function toggleStatusMenu(index: number) {
+		openStatusIndex = openStatusIndex === index ? null : index;
+	}
+
+	function updateStatus(targetIndex: number, status: TableEntry['status']) {
+		const updated = entries.map((entry, index) =>
+			index === targetIndex ? { ...entry, status } : entry
+		);
+		entries = sortEntries(updated);
+	}
+
+	function updateEntryField(index: number, field: EditableField, value: string) {
+		const updated = entries.map((entry, entryIndex) =>
+			entryIndex === index ? { ...entry, [field]: value } : entry
+		);
+		entries = updated;
+	}
+
+	function handleFieldInput(index: number, field: EditableField, event: Event) {
+		const target = event.currentTarget as HTMLInputElement | HTMLTextAreaElement;
+		updateEntryField(index, field, target.value);
+	}
 
 	function statusStyles(status: TableEntry['status']): string {
 		if (status === 'Pending') return 'bg-amber-100 text-amber-800';
@@ -145,15 +186,29 @@
 		return 'bg-emerald-500';
 	}
 
-	function toggleStatusMenu(index: number) {
-		openStatusIndex = openStatusIndex === index ? null : index;
+	function formatTimestamp(date: Date): string {
+		const month = date.getMonth() + 1;
+		const day = date.getDate();
+		const year = date.getFullYear();
+		const hours = date.getHours().toString().padStart(2, '0');
+		const minutes = date.getMinutes().toString().padStart(2, '0');
+		const seconds = date.getSeconds().toString().padStart(2, '0');
+		return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
 	}
 
-	function updateStatus(targetIndex: number, status: TableEntry['status']) {
-		const updated = entries.map((entry, index) =>
-			index === targetIndex ? { ...entry, status } : entry
-		);
-		entries = updated.sort((a, b) => statusRank[a.status] - statusRank[b.status]);
+	function addNewIssue() {
+		if (entries.some((entry) => entry.isDraft)) return;
+		const now = new Date();
+		const draftEntry: TableEntry = {
+			time: formatTimestamp(now),
+			building: '',
+			unit: '',
+			description: '',
+			action: '',
+			status: 'Pending',
+			isDraft: true
+		};
+		entries = sortEntries([...entries, draftEntry]);
 	}
 
 	function handleSend(event: SubmitEvent) {
@@ -183,7 +238,8 @@
 					>
 						{tab.label}
 						{#if tab.id === 'inbox'}
-							<span class="rounded bg-stone-700 px-2 py-0.5 text-xs text-white">{entries.length}</span
+							<span class="rounded bg-stone-700 px-2 py-0.5 text-xs text-white"
+								>{entries.length}</span
 							>
 						{/if}
 					</button>
@@ -226,26 +282,67 @@
 									></div>
 								{/each}
 							</div>
-							<div class="relative divide-y divide-stone-200">
+							<div class="relative">
 								{#each entries as entry, index (index)}
 									<div
-										class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] text-sm text-stone-800"
+										class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
 									>
-										<div class="px-2 py-2 font-mono text-xs text-stone-500">{entry.time}</div>
-										<div class="px-2 py-2 font-medium">{entry.building}</div>
-										<div class="px-2 py-2">{entry.unit}</div>
-										<div class="px-2 py-2 text-stone-600">{entry.description}</div>
-										<div class="px-2 py-2">{entry.action}</div>
-										<div class="relative px-2 py-2">
+										<div class="px-4 py-4 font-mono text-xs text-stone-500">{entry.time}</div>
+										<div class="px-4 py-4">
+											{#if entry.isDraft}
+												<input
+													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+													value={entry.building}
+													oninput={(event) => handleFieldInput(index, 'building', event)}
+												/>
+											{:else}
+												<span class="font-medium">{entry.building}</span>
+											{/if}
+										</div>
+										<div class="px-4 py-4">
+											{#if entry.isDraft}
+												<input
+													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+													value={entry.unit}
+													oninput={(event) => handleFieldInput(index, 'unit', event)}
+												/>
+											{:else}
+												{entry.unit}
+											{/if}
+										</div>
+										<div class="px-4 py-4 text-stone-600">
+											{#if entry.isDraft}
+												<textarea
+													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+													rows="2"
+													value={entry.description}
+													oninput={(event) => handleFieldInput(index, 'description', event)}
+												></textarea>
+											{:else}
+												{entry.description}
+											{/if}
+										</div>
+										<div class="px-4 py-4">
+											{#if entry.isDraft}
+												<input
+													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+													value={entry.action}
+													oninput={(event) => handleFieldInput(index, 'action', event)}
+												/>
+											{:else}
+												{entry.action}
+											{/if}
+										</div>
+										<div class="relative px-4 py-4">
 											<button
-												class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyles(entry.status)}`}
+												class={`flex items-center gap-2 rounded-full border border-stone-300 px-3 py-1 text-xs font-semibold ${statusStyles(entry.status)}`}
 												onclick={(event) => {
 													event.stopPropagation();
 													toggleStatusMenu(index);
 												}}
 											>
 												<span
-													class={`h-2 w-2 rounded-full ${statusDotStyles(entry.status)}`}
+													class={`h-2.5 w-2.5 rounded-full ${statusDotStyles(entry.status)}`}
 													aria-hidden="true"
 												></span>
 												{entry.status}
@@ -257,9 +354,7 @@
 													{#each statusOptions as option}
 														<button
 															class={`flex w-full items-center justify-between px-3 py-2 text-xs text-stone-700 hover:bg-stone-100 ${
-																option === entry.status
-																	? 'font-semibold text-stone-900'
-																	: ''
+																option === entry.status ? 'font-semibold text-stone-900' : ''
 															}`}
 															onclick={(event) => {
 																event.stopPropagation();
@@ -290,6 +385,23 @@
 								{/each}
 							</div>
 						</div>
+						{#if !hasDraftEntry}
+							<button
+								type="button"
+								class="items-center px-2 py-1 mt-2 ml-2 rounded-md text-left text-sm font-medium text-stone-600 transition hover:bg-stone-100"
+								onclick={addNewIssue}
+							>
+								<span class="flex items-center gap-2">
+									<span
+										class="flex h-6 w-6 items-center justify-center rounded-full text-base text-stone-600"
+										aria-hidden="true"
+									>
+										+
+									</span>
+									New issue
+								</span>
+							</button>
+						{/if}
 					</div>
 				</div>
 			{:else}
@@ -325,17 +437,23 @@
 				<label class="sr-only" for="copilot-input">Ask Hermes</label>
 				<textarea
 					id="copilot-input"
-					class="w-full resize-none rounded-2xl border text-xs border-stone-200 bg-white px-4 py-3 pr-16 text-sm text-stone-800 shadow-sm outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
+					class="w-full resize-none rounded-2xl border border-stone-200 bg-white px-4 py-3 pr-16 text-sm text-xs text-stone-800 shadow-sm transition outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
 					rows="3"
 					placeholder="Drag in context, complete issues"
 					bind:value={chatInput}
 				></textarea>
 				<button
 					type="submit"
-					class="absolute bottom-3 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-black text-white shadow-sm transition hover:bg-stone-800"
+					class="absolute right-2 bottom-3 flex h-6 w-6 items-center justify-center rounded-full bg-black text-white shadow-sm transition hover:bg-white"
 					aria-label="Send message"
 				>
-					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						fill="none"
+						viewBox="0 0 16 16"
+					>
 						<path
 							fill="currentColor"
 							d="M8 12.75a.75.75 0 0 1-.75-.75V5.81l-2.22 2.22a.75.75 0 0 1-1.06-1.06l3.5-3.5a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 1 1-1.06 1.06L8.75 5.81V12a.75.75 0 0 1-.75.75Z"
