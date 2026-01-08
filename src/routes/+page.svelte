@@ -491,34 +491,36 @@
 											{#if openUnitIndex === index}
 												{@const filteredUnits = getFilteredUnits(entry)}
 												<div
-													class="absolute top-full left-0 z-10 mt-2 max-h-56 w-full min-w-32 overflow-y-auto rounded-md border border-stone-200 bg-white text-sm shadow-lg"
+													class="absolute top-full left-0 z-10 mt-2 flex max-h-56 w-full min-w-32 flex-col rounded-md border border-stone-200 bg-white text-sm shadow-lg"
 												>
-													{#each filteredUnits as unitOption}
-														<button
-															class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100 ${
-																unitOption === entry.unit ? 'font-semibold text-stone-900' : ''
-															}`}
-															onclick={(event) => {
-																event.stopPropagation();
-																selectUnit(index, unitOption);
-															}}
-														>
-															<span>{unitOption}</span>
-															{#if unitOption === entry.unit}
-																<svg
-																	xmlns="http://www.w3.org/2000/svg"
-																	width="12"
-																	height="12"
-																	fill="currentColor"
-																	viewBox="0 0 16 16"
-																>
-																	<path
-																		d="M13.485 1.929a.75.75 0 0 1 0 1.06L6.486 9.99a.75.75 0 0 1-1.06 0L2.515 7.08a.75.75 0 0 1 1.06-1.06L6 8.445l6.425-6.515a.75.75 0 0 1 1.06 0"
-																	/>
-																</svg>
-															{/if}
-														</button>
-													{/each}
+													<div class="max-h-40 overflow-y-auto">
+														{#each filteredUnits as unitOption}
+															<button
+																class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100 ${
+																	unitOption === entry.unit ? 'font-semibold text-stone-900' : ''
+																}`}
+																onclick={(event) => {
+																	event.stopPropagation();
+																	selectUnit(index, unitOption);
+																}}
+															>
+																<span>{unitOption}</span>
+																{#if unitOption === entry.unit}
+																	<svg
+																		xmlns="http://www.w3.org/2000/svg"
+																		width="12"
+																		height="12"
+																		fill="currentColor"
+																		viewBox="0 0 16 16"
+																	>
+																		<path
+																			d="M13.485 1.929a.75.75 0 0 1 0 1.06L6.486 9.99a.75.75 0 0 1-1.06 0L2.515 7.08a.75.75 0 0 1 1.06-1.06L6 8.445l6.425-6.515a.75.75 0 0 1 1.06 0"
+																		/>
+																	</svg>
+																{/if}
+															</button>
+														{/each}
+													</div>
 													<div class="border-t border-stone-100 px-3 py-2 text-right text-[11px] uppercase tracking-wide text-stone-400">
 														{filteredUnits.length} units
 													</div>
