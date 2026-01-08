@@ -117,15 +117,14 @@
 
 	function sortEntries(list: TableEntry[]): TableEntry[] {
 		return [...list].sort((a, b) => {
-			if (a.isDraft && !b.isDraft) return 1;
-			if (!a.isDraft && b.isDraft) return -1;
+			if (a.isDraft && !b.isDraft) return -1;
+			if (!a.isDraft && b.isDraft) return 1;
 			return statusRank[a.status] - statusRank[b.status];
 		});
 	}
 
 	let entries = $state(sortEntries(initialEntries));
 	let openStatusIndex = $state<number | null>(null);
-	const hasDraftEntry = $derived(entries.some((entry) => entry.isDraft));
 
 	const conversation: ChatMessage[] = [
 		{
@@ -197,7 +196,6 @@
 	}
 
 	function addNewIssue() {
-		if (entries.some((entry) => entry.isDraft)) return;
 		const now = new Date();
 		const draftEntry: TableEntry = {
 			time: formatTimestamp(now),
@@ -258,18 +256,25 @@
 								proceed.
 							</p>
 						</div>
+						<button
+							type="button"
+							class="flex items-center gap-2 rounded-md bg-stone-800 px-2 py-1 text-xs text-stone-50 transition"
+							onclick={addNewIssue}
+						>
+							New issue
+						</button>
 					</div>
 
-					<div class="flex-1 overflow-hidden rounded-xl border border-stone-200">
+					<div class="flex-1 overflow-hidden rounded-lg border border-stone-200">
 						<div
 							class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
 						>
-							<div class="px-4 py-3">Time</div>
-							<div class="px-4 py-3">Building</div>
-							<div class="px-4 py-3">Unit</div>
-							<div class="px-4 py-3">Description</div>
-							<div class="px-4 py-3">Action</div>
-							<div class="px-4 py-3">Status</div>
+							<div class="px-1 py-2">Time</div>
+							<div class="px-1 py-2">Building</div>
+							<div class="px-1 py-2">Unit</div>
+							<div class="px-1 py-2">Description</div>
+							<div class="px-1 py-2">Action</div>
+							<div class="px-1 py-2">Status</div>
 						</div>
 						<div class="relative">
 							<div
@@ -287,8 +292,8 @@
 									<div
 										class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
 									>
-										<div class="px-4 py-4 font-mono text-xs text-stone-500">{entry.time}</div>
-										<div class="px-4 py-4">
+										<div class="px-2 py-2 font-mono text-xs text-stone-500">{entry.time}</div>
+										<div class="px-2 py-2">
 											{#if entry.isDraft}
 												<input
 													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
@@ -299,7 +304,7 @@
 												<span class="font-medium">{entry.building}</span>
 											{/if}
 										</div>
-										<div class="px-4 py-4">
+										<div class="px-2 py-2">
 											{#if entry.isDraft}
 												<input
 													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
@@ -310,7 +315,7 @@
 												{entry.unit}
 											{/if}
 										</div>
-										<div class="px-4 py-4 text-stone-600">
+										<div class="px-2 py-2 text-stone-600">
 											{#if entry.isDraft}
 												<textarea
 													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
@@ -322,7 +327,7 @@
 												{entry.description}
 											{/if}
 										</div>
-										<div class="px-4 py-4">
+										<div class="px-2 py-2">
 											{#if entry.isDraft}
 												<input
 													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
@@ -333,9 +338,9 @@
 												{entry.action}
 											{/if}
 										</div>
-										<div class="relative px-4 py-4">
+										<div class="relative px-2 py-2">
 											<button
-												class={`flex items-center gap-2 rounded-full border border-stone-300 px-3 py-1 text-xs font-semibold ${statusStyles(entry.status)}`}
+												class={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${statusStyles(entry.status)}`}
 												onclick={(event) => {
 													event.stopPropagation();
 													toggleStatusMenu(index);
@@ -385,25 +390,8 @@
 								{/each}
 							</div>
 						</div>
-						{#if !hasDraftEntry}
-							<button
-								type="button"
-								class="items-center px-2 py-1 mt-2 ml-2 rounded-md text-left text-sm font-medium text-stone-600 transition hover:bg-stone-100"
-								onclick={addNewIssue}
-							>
-								<span class="flex items-center gap-2">
-									<span
-										class="flex h-6 w-6 items-center justify-center rounded-full text-base text-stone-600"
-										aria-hidden="true"
-									>
-										+
-									</span>
-									New issue
-								</span>
-							</button>
-						{/if}
+						</div>
 					</div>
-				</div>
 			{:else}
 				<div class="flex h-full flex-col items-center justify-center gap-3 text-center">
 					<p class="text-sm tracking-wide text-stone-500 uppercase">Coming soon</p>
