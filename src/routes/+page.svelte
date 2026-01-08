@@ -36,10 +36,10 @@
 		unit: string;
 		description: string;
 		action: string;
-		status: 'Needs Approval' | 'In Progress' | 'Complete';
+		status: 'Pending' | 'In Progress' | 'Complete';
 	}
 
-	const statusOptions: TableEntry['status'][] = ['Needs Approval', 'In Progress', 'Complete'];
+	const statusOptions: TableEntry['status'][] = ['Pending', 'In Progress', 'Complete'];
 
 	const initialEntries: TableEntry[] = [
 		{
@@ -72,7 +72,7 @@
 			unit: '5',
 			description: 'Bathroom shower door broken',
 			action: '',
-			status: 'Needs Approval'
+			status: 'Pending'
 		},
 		{
 			time: '1/5/2026 9:27:02',
@@ -101,7 +101,7 @@
 	];
 
 	const statusRank: Record<TableEntry['status'], number> = {
-		'Needs Approval': 0,
+		Pending: 0,
 		'In Progress': 1,
 		Complete: 2
 	};
@@ -112,9 +112,15 @@
 	let openStatusIndex = $state<number | null>(null);
 
 	function statusStyles(status: TableEntry['status']): string {
-		if (status === 'Needs Approval') return 'bg-amber-100 text-amber-800';
+		if (status === 'Pending') return 'bg-amber-100 text-amber-800';
 		if (status === 'In Progress') return 'bg-blue-100 text-blue-800';
 		return 'bg-emerald-100 text-emerald-800';
+	}
+
+	function statusDotStyles(status: TableEntry['status']): string {
+		if (status === 'Pending') return 'bg-amber-500';
+		if (status === 'In Progress') return 'bg-blue-500';
+		return 'bg-emerald-500';
 	}
 
 	function toggleStatusMenu(index: number) {
@@ -198,31 +204,24 @@
 									<div
 										class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] text-sm text-stone-800"
 									>
-										<div class="px-4 py-4 font-mono text-xs text-stone-500">{entry.time}</div>
-										<div class="px-4 py-4 font-medium">{entry.building}</div>
-										<div class="px-4 py-4">{entry.unit}</div>
-										<div class="px-4 py-4 text-stone-600">{entry.description}</div>
-										<div class="px-4 py-4">{entry.action}</div>
-										<div class="relative px-4 py-4">
+										<div class="px-2 py-2 font-mono text-xs text-stone-500">{entry.time}</div>
+										<div class="px-2 py-2 font-medium">{entry.building}</div>
+										<div class="px-2 py-2">{entry.unit}</div>
+										<div class="px-2 py-2 text-stone-600">{entry.description}</div>
+										<div class="px-2 py-2">{entry.action}</div>
+										<div class="relative px-2 py-2">
 											<button
-												class={`flex items-center gap-2 rounded-full border border-stone-300 px-3 py-1 text-xs font-semibold ${statusStyles(entry.status)}`}
+												class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyles(entry.status)}`}
 												onclick={(event) => {
 													event.stopPropagation();
 													toggleStatusMenu(index);
 												}}
 											>
+												<span
+													class={`h-2 w-2 rounded-full ${statusDotStyles(entry.status)}`}
+													aria-hidden="true"
+												></span>
 												{entry.status}
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													width="12"
-													height="12"
-													fill="currentColor"
-													viewBox="0 0 16 16"
-												>
-													<path
-														d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0"
-													/>
-												</svg>
 											</button>
 											{#if openStatusIndex === index}
 												<div
