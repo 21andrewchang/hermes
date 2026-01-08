@@ -37,61 +37,71 @@
 		description: string;
 		action: string;
 		status: 'Todo' | 'In Progress' | 'Needs Approval' | 'Complete' | 'Flagged';
-		invoice: string;
 	}
 
 	const statusOptions: TableEntry['status'][] = ['Todo', 'In Progress', 'Needs Approval', 'Complete', 'Flagged'];
 
 	const initialEntries: TableEntry[] = [
 		{
-			time: 'Mar 15 · 08:15 AM',
+			time: '1/7/2026 21:16:35',
 			building: 'Mariposa',
-			unit: '12B',
-			description: 'Leak detected in laundry room',
-			action: 'Dispatch plumber',
-			status: 'Needs Approval',
-			invoice: '#INV-2031'
+			unit: '206',
+			description: 'Cigarette smoke smell issue',
+			action: 'Esther notified',
+			status: 'In Progress'
 		},
 		{
-			time: 'Mar 15 · 09:40 AM',
-			building: 'Stanford',
-			unit: '5A',
-			description: 'AC unit not cooling properly',
-			action: 'Schedule HVAC inspection',
-			status: 'In Progress',
-			invoice: '#INV-2032'
-		},
-		{
-			time: 'Mar 15 · 11:05 AM',
-			building: 'Sycamore',
-			unit: '7C',
-			description: 'Broken window in living room',
-			action: 'Board up + order replacement',
-			status: 'Todo',
-			invoice: '#INV-2033'
-		},
-		{
-			time: 'Mar 15 · 12:30 PM',
-			building: 'Pickford',
-			unit: '3D',
-			description: 'Wifi outage reported',
-			action: 'Coordinate with ISP',
-			status: 'Flagged',
-			invoice: '#INV-2034'
-		},
-		{
-			time: 'Mar 15 · 02:55 PM',
+			time: '1/7/2026 20:41:39',
 			building: 'Mariposa',
-			unit: '9F',
-			description: 'Appliance swap approval',
-			action: 'Generate PO',
-			status: 'Complete',
-			invoice: '#INV-2035'
+			unit: '408',
+			description: 'Gas leak',
+			action: 'Sent Esther',
+			status: 'Complete'
+		},
+		{
+			time: '1/7/2026 10:50:01',
+			building: 'Willoughby',
+			unit: '5',
+			description: 'Rental verification + reference check',
+			action: '',
+			status: 'Complete'
+		},
+		{
+			time: '1/6/2026 10:44:01',
+			building: 'Willoughby',
+			unit: '5',
+			description: 'Bathroom shower door broken',
+			action: '',
+			status: 'Todo'
+		},
+		{
+			time: '1/5/2026 9:27:02',
+			building: 'Mariposa',
+			unit: '501',
+			description: 'Dishwasher broken',
+			action: 'Contacted appliance guy',
+			status: 'In Progress'
+		},
+		{
+			time: '1/4/2026 14:03:26',
+			building: 'Mariposa',
+			unit: '407',
+			description: 'Dishwasher broken',
+			action: 'Contacted appliance guy',
+			status: 'In Progress'
+		},
+		{
+			time: '1/3/2026 21:20:12',
+			building: 'Mariposa',
+			unit: '407',
+			description: 'Broken fob key',
+			action: 'Delivered new fob',
+			status: 'Complete'
 		}
 	];
 
 	let entries = $state([...initialEntries]);
-	let openStatusInvoice = $state<string | null>(null);
+	let openStatusIndex = $state<number | null>(null);
 
 	function statusStyles(status: TableEntry['status']): string {
 		if (status === 'Todo') return 'bg-stone-200 text-stone-800';
@@ -101,17 +111,17 @@
 		return 'bg-emerald-100 text-emerald-800';
 	}
 
-	function toggleStatusMenu(invoice: string) {
-		openStatusInvoice = openStatusInvoice === invoice ? null : invoice;
+	function toggleStatusMenu(index: number) {
+		openStatusIndex = openStatusIndex === index ? null : index;
 	}
 
-	function updateStatus(invoice: string, status: TableEntry['status']) {
-		entries = entries.map((entry) => (entry.invoice === invoice ? { ...entry, status } : entry));
+	function updateStatus(targetIndex: number, status: TableEntry['status']) {
+		entries = entries.map((entry, index) => (index === targetIndex ? { ...entry, status } : entry));
 	}
 
 	$effect(() => {
 		function handleClick() {
-			openStatusInvoice = null;
+			openStatusIndex = null;
 		}
 		window.addEventListener('click', handleClick);
 		return () => {
@@ -163,28 +173,26 @@
 							This inbox lists open property issues that need human approval before work can proceed.
 						</p>
 					</div>
-					<div class="text-sm text-stone-500">{entries.length} records today</div>
 				</div>
 
 				<div class="flex-1 overflow-hidden rounded-xl border border-stone-200">
-					<div class="grid grid-cols-[200px_0.9fr_0.8fr_2fr_1.4fr_1fr_1fr] border-b border-stone-200 bg-stone-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-stone-500">
-						<div>Time</div>
-						<div>Building</div>
-						<div>Unit</div>
-						<div>Description</div>
-						<div>Action</div>
-						<div>Status</div>
-						<div>Invoice</div>
-						</div>
+					<div class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500">
+						<div class="px-4 py-3">Time</div>
+						<div class="px-4 py-3">Building</div>
+						<div class="px-4 py-3">Unit</div>
+						<div class="px-4 py-3">Description</div>
+						<div class="px-4 py-3">Action</div>
+						<div class="px-4 py-3">Status</div>
+					</div>
 						<div class="relative">
-							<div class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[200px_0.9fr_0.8fr_2fr_1.4fr_1fr_1fr]">
-								{#each Array(7) as _, index}
-									<div class={`border-r border-stone-200 ${index === 6 ? 'border-r-0' : ''}`} aria-hidden="true"></div>
+							<div class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr]">
+								{#each Array(6) as _, index}
+									<div class={`border-r border-stone-200 ${index === 5 ? 'border-r-0' : ''}`} aria-hidden="true"></div>
 								{/each}
 							</div>
 							<div class="relative divide-y divide-stone-200">
-								{#each entries as entry (entry.invoice)}
-									<div class="grid grid-cols-[200px_0.9fr_0.8fr_2fr_1.4fr_1fr_1fr] text-sm text-stone-800">
+								{#each entries as entry, index (index)}
+									<div class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] text-sm text-stone-800">
 										<div class="px-4 py-4 font-mono text-xs text-stone-500">{entry.time}</div>
 										<div class="px-4 py-4 font-medium">{entry.building}</div>
 										<div class="px-4 py-4">{entry.unit}</div>
@@ -195,15 +203,15 @@
 												class={`flex items-center gap-2 rounded-full border border-stone-300 px-3 py-1 text-xs font-semibold ${statusStyles(entry.status)}`}
 												onclick={(event) => {
 													event.stopPropagation();
-													toggleStatusMenu(entry.invoice);
-											}}
-										>
+													toggleStatusMenu(index);
+												}}
+											>
 											{entry.status}
 											<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
 												<path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0" />
 											</svg>
 										</button>
-										{#if openStatusInvoice === entry.invoice}
+										{#if openStatusIndex === index}
 											<div class="absolute right-0 top-full z-10 mt-2 w-44 rounded-md border border-stone-200 bg-white shadow-lg">
 												{#each statusOptions as option}
 													<button
@@ -212,8 +220,8 @@
 														}`}
 														onclick={(event) => {
 															event.stopPropagation();
-															updateStatus(entry.invoice, option);
-															openStatusInvoice = null;
+															updateStatus(index, option);
+															openStatusIndex = null;
 														}}
 													>
 														<span>{option}</span>
@@ -229,7 +237,6 @@
 												</div>
 											{/if}
 										</div>
-										<div class="px-4 py-4 font-mono text-xs text-stone-500">{entry.invoice}</div>
 									</div>
 								{/each}
 							</div>
