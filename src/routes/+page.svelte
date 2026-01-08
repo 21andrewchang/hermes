@@ -41,6 +41,49 @@
 	}
 
 	const statusOptions: TableEntry['status'][] = ['Pending', 'In Progress', 'Complete'];
+	const buildingOptions = tabs.filter((tab) => tab.id !== 'inbox');
+	const buildingUnits: Record<string, string[]> = {
+		Mariposa: [
+			'101',
+			'201',
+			'202',
+			'203',
+			'204',
+			'205',
+			'206',
+			'207',
+			'301',
+			'302',
+			'303',
+			'304',
+			'305',
+			'306',
+			'307',
+			'308',
+			'401',
+			'402',
+			'403',
+			'404',
+			'405',
+			'406',
+			'407',
+			'408',
+			'501',
+			'502',
+			'503',
+			'504',
+			'505',
+			'506',
+			'507',
+			'508'
+		],
+		Willoughby: ['1', '2', '3', '4', '5', '6', '7'],
+		Stanford: ['1', '2', '3', '4', '5', '6'],
+		Sycamore: ['836', '836 1/2', '838', '838 1/2'],
+		Pickford: ['4637', '4637 1/2', '4639', '4639 1/2'],
+		'18th': ['1', '2', '3', '4'],
+		'17th': ['4723', '4725']
+	};
 	type EditableField = 'building' | 'unit' | 'description' | 'action';
 
 	interface ChatMessage {
@@ -125,6 +168,8 @@
 
 	let entries = $state(sortEntries(initialEntries));
 	let openStatusIndex = $state<number | null>(null);
+	let openBuildingIndex = $state<number | null>(null);
+	let openUnitIndex = $state<number | null>(null);
 
 	const conversation: ChatMessage[] = [
 		{
@@ -152,6 +197,8 @@
 
 	function toggleStatusMenu(index: number) {
 		openStatusIndex = openStatusIndex === index ? null : index;
+		openBuildingIndex = null;
+		openUnitIndex = null;
 	}
 
 	function updateStatus(targetIndex: number, status: TableEntry['status']) {
@@ -171,6 +218,38 @@
 	function handleFieldInput(index: number, field: EditableField, event: Event) {
 		const target = event.currentTarget as HTMLInputElement | HTMLTextAreaElement;
 		updateEntryField(index, field, target.value);
+	}
+
+	function toggleBuildingMenu(index: number) {
+		openBuildingIndex = openBuildingIndex === index ? null : index;
+		openStatusIndex = null;
+		openUnitIndex = null;
+	}
+
+	function toggleUnitMenu(index: number) {
+		openUnitIndex = openUnitIndex === index ? null : index;
+		openBuildingIndex = null;
+		openStatusIndex = null;
+	}
+
+	function getUnitOptions(building: string): string[] {
+		return buildingUnits[building] ?? [];
+	}
+
+	function selectBuilding(index: number, label: string) {
+		const units = getUnitOptions(label);
+		const updated = entries.map((entry, entryIndex) =>
+			entryIndex === index
+				? { ...entry, building: label, unit: units.length > 0 ? units[0] : '' }
+				: entry
+		);
+		entries = updated;
+		openBuildingIndex = null;
+	}
+
+	function selectUnit(index: number, unitValue: string) {
+		updateEntryField(index, 'unit', unitValue);
+		openUnitIndex = null;
 	}
 
 	function statusStyles(status: TableEntry['status']): string {
@@ -215,9 +294,11 @@
 	}
 
 	$effect(() => {
-		function handleClick() {
-			openStatusIndex = null;
-		}
+			function handleClick() {
+				openStatusIndex = null;
+				openBuildingIndex = null;
+				openUnitIndex = null;
+			}
 		window.addEventListener('click', handleClick);
 		return () => {
 			window.removeEventListener('click', handleClick);
@@ -293,19 +374,93 @@
 										class="grid grid-cols-[150px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
 									>
 										<div class="px-2 py-2 font-mono text-xs text-stone-500">{entry.time}</div>
-										<div class="px-0">
-											<input
-												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm font-medium text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
-												value={entry.building}
-												oninput={(event) => handleFieldInput(index, 'building', event)}
-											/>
+										<div class="relative px-0">
+											<button
+												class="flex h-full w-full items-center justify-between rounded-md border border-transparent bg-transparent px-2 py-2 text-sm font-medium text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												onclick={(event) => {
+													event.stopPropagation();
+													toggleBuildingMenu(index);
+												}}
+											>
+												{entry.building}
+											</button>
+											{#if openBuildingIndex === index}
+												<div
+													class="absolute top-full left-0 z-10 mt-2 w-full min-w-40 rounded-md border border-stone-200 bg-white shadow-lg"
+												>
+													{#each buildingOptions as option}
+														<button
+															class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100 ${
+																option.label === entry.building
+																	? 'font-semibold text-stone-900'
+																	: ''
+															}`}
+															onclick={(event) => {
+																event.stopPropagation();
+																selectBuilding(index, option.label);
+															}}
+														>
+															<span>{option.label}</span>
+															{#if option.label === entry.building}
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	width="12"
+																	height="12"
+																	fill="currentColor"
+																	viewBox="0 0 16 16"
+																>
+																	<path
+																		d="M13.485 1.929a.75.75 0 0 1 0 1.06L6.486 9.99a.75.75 0 0 1-1.06 0L2.515 7.08a.75.75 0 0 1 1.06-1.06L6 8.445l6.425-6.515a.75.75 0 0 1 1.06 0"
+																	/>
+																</svg>
+															{/if}
+														</button>
+													{/each}
+												</div>
+											{/if}
 										</div>
-										<div class="px-0">
-											<input
-												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
-												value={entry.unit}
-												oninput={(event) => handleFieldInput(index, 'unit', event)}
-											/>
+										<div class="relative px-0">
+											<button
+												class="flex h-full w-full items-center justify-between rounded-md border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												onclick={(event) => {
+													event.stopPropagation();
+													toggleUnitMenu(index);
+												}}
+											>
+												{entry.unit || 'Select unit'}
+											</button>
+											{#if openUnitIndex === index}
+												<div
+													class="absolute top-full left-0 z-10 mt-2 max-h-56 w-full min-w-32 overflow-y-auto rounded-md border border-stone-200 bg-white shadow-lg"
+												>
+													{#each getUnitOptions(entry.building) as unitOption}
+														<button
+															class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100 ${
+																unitOption === entry.unit ? 'font-semibold text-stone-900' : ''
+															}`}
+															onclick={(event) => {
+																event.stopPropagation();
+																selectUnit(index, unitOption);
+															}}
+														>
+															<span>{unitOption}</span>
+															{#if unitOption === entry.unit}
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	width="12"
+																	height="12"
+																	fill="currentColor"
+																	viewBox="0 0 16 16"
+																>
+																	<path
+																		d="M13.485 1.929a.75.75 0 0 1 0 1.06L6.486 9.99a.75.75 0 0 1-1.06 0L2.515 7.08a.75.75 0 0 1 1.06-1.06L6 8.445l6.425-6.515a.75.75 0 0 1 1.06 0"
+																	/>
+																</svg>
+															{/if}
+														</button>
+													{/each}
+												</div>
+											{/if}
 										</div>
 										<div class="px-0 text-stone-600">
 											<input
