@@ -40,6 +40,12 @@
 	}
 
 	const statusOptions: TableEntry['status'][] = ['Pending', 'In Progress', 'Complete'];
+	interface ChatMessage {
+		id: number;
+		role: 'user' | 'assistant';
+		content: string;
+		timestamp: string;
+	}
 
 	const initialEntries: TableEntry[] = [
 		{
@@ -110,6 +116,22 @@
 		[...initialEntries].sort((a, b) => statusRank[a.status] - statusRank[b.status])
 	);
 	let openStatusIndex = $state<number | null>(null);
+	const conversation: ChatMessage[] = [
+		{
+			id: 1,
+			role: 'user',
+			content: 'Give me the quick takeaways for Mariposa.',
+			timestamp: '09:14'
+		},
+		{
+			id: 2,
+			role: 'assistant',
+			content:
+				'Four open tickets: two dishwashers awaiting vendor confirmation, one gas leak resolved, one shower repair pending approval.',
+			timestamp: '09:14'
+		}
+	];
+	let chatInput = $state('');
 
 	function statusStyles(status: TableEntry['status']): string {
 		if (status === 'Pending') return 'bg-amber-100 text-amber-800';
@@ -134,6 +156,11 @@
 		entries = updated.sort((a, b) => statusRank[a.status] - statusRank[b.status]);
 	}
 
+	function handleSend(event: SubmitEvent) {
+		event.preventDefault();
+		chatInput = '';
+	}
+
 	$effect(() => {
 		function handleClick() {
 			openStatusIndex = null;
@@ -147,7 +174,7 @@
 
 <div class="flex h-screen bg-white text-black">
 	<div class="flex w-3/4 flex-col">
-		<header class="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+		<header class="flex items-center justify-between border-b border-stone-200 px-2 py-2">
 			<div class="flex flex-wrap items-center gap-2">
 				{#each tabs as tab}
 					<button
@@ -164,7 +191,7 @@
 			</div>
 		</header>
 
-		<main class="flex-1 overflow-hidden px-10 py-6">
+		<main class="flex-1 overflow-hidden px-6 py-4">
 			{#if activeTab === 'inbox'}
 				<div class="flex h-full flex-col gap-6">
 					<div class="flex items-end justify-between">
@@ -277,18 +304,45 @@
 			{/if}
 		</main>
 	</div>
-	<section class="flex w-1/4 flex-col justify-between border-l border-stone-200 px-6 py-6">
-		<div>
-			<p class="text-xs tracking-wide text-stone-500 uppercase">Operations notes</p>
-			<h2 class="mt-2 text-2xl font-semibold text-stone-900">Upcoming Actions</h2>
-			<p class="mt-2 text-sm text-stone-600">
-				This panel is reserved for quick reference data, summaries, or reminders tied to the currently
-				selected workflow. Fill it with metrics, checklists, or whatever else you need.
-			</p>
-		</div>
-		<div class="rounded-xl border border-dashed border-stone-300 px-4 py-5 text-center">
-			<p class="text-sm font-medium text-stone-700">Add widgets here</p>
-			<p class="mt-1 text-xs text-stone-500">KPIs, reminders, or digest snapshots live in this space.</p>
+	<section class="flex w-1/4 flex-col border-l border-stone-200 bg-white">
+		<div class="flex flex-1 flex-col px-4 py-4">
+			<div class="flex-1 space-y-4 overflow-y-auto pr-1">
+				{#each conversation as message}
+					<div class={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
+						<div
+							class={`w-full rounded-xl px-4 py-3 text-sm ${
+								message.role === 'assistant'
+									? 'bg-transparent text-stone-700'
+									: 'bg-stone-100 text-stone-900'
+							}`}
+						>
+							<p>{message.content}</p>
+						</div>
+					</div>
+				{/each}
+			</div>
+			<form class="relative mt-4" onsubmit={handleSend}>
+				<label class="sr-only" for="copilot-input">Ask Hermes</label>
+				<textarea
+					id="copilot-input"
+					class="w-full resize-none rounded-2xl border text-xs border-stone-200 bg-white px-4 py-3 pr-16 text-sm text-stone-800 shadow-sm outline-none transition focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
+					rows="3"
+					placeholder="Drag in context, complete issues"
+					bind:value={chatInput}
+				></textarea>
+				<button
+					type="submit"
+					class="absolute bottom-3 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-black text-white shadow-sm transition hover:bg-stone-800"
+					aria-label="Send message"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 16 16">
+						<path
+							fill="currentColor"
+							d="M8 12.75a.75.75 0 0 1-.75-.75V5.81l-2.22 2.22a.75.75 0 0 1-1.06-1.06l3.5-3.5a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 1 1-1.06 1.06L8.75 5.81V12a.75.75 0 0 1-.75.75Z"
+						/>
+					</svg>
+				</button>
+			</form>
 		</div>
 	</section>
 </div>
