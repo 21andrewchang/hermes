@@ -462,7 +462,7 @@
 										</div>
 										<div class="relative px-0">
 											<input
-												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												class="h-full w-full rounded-md border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
 												placeholder=""
 												value={getUnitDisplay(entry)}
 												onfocus={(event) => {
@@ -529,14 +529,14 @@
 										</div>
 										<div class="px-0 text-stone-600">
 											<input
-												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												class="h-full w-full rounded-md border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
 												value={entry.description}
 												oninput={(event) => handleFieldInput(index, 'description', event)}
 											/>
 										</div>
 										<div class="px-0">
 											<input
-												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												class="h-full w-full rounded-md border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
 												value={entry.action}
 												oninput={(event) => handleFieldInput(index, 'action', event)}
 											/>
