@@ -267,7 +267,7 @@
 
 					<div class="flex-1 overflow-hidden rounded-lg border border-stone-200">
 						<div
-							class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+							class="grid grid-cols-[150px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
 						>
 							<div class="px-1 py-2">Time</div>
 							<div class="px-1 py-2">Building</div>
@@ -278,7 +278,7 @@
 						</div>
 						<div class="relative">
 							<div
-								class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr]"
+								class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[150px_0.8fr_0.7fr_2fr_1.4fr_1fr]"
 							>
 								{#each Array(6) as _, index}
 									<div
@@ -290,55 +290,38 @@
 							<div class="relative">
 								{#each entries as entry, index (index)}
 									<div
-										class="grid grid-cols-[170px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
+										class="grid grid-cols-[150px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
 									>
 										<div class="px-2 py-2 font-mono text-xs text-stone-500">{entry.time}</div>
-										<div class="px-2 py-2">
-											{#if entry.isDraft}
-												<input
-													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
-													value={entry.building}
-													oninput={(event) => handleFieldInput(index, 'building', event)}
-												/>
-											{:else}
-												<span class="font-medium">{entry.building}</span>
-											{/if}
+										<div class="px-0">
+											<input
+												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm font-medium text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												value={entry.building}
+												oninput={(event) => handleFieldInput(index, 'building', event)}
+											/>
 										</div>
-										<div class="px-2 py-2">
-											{#if entry.isDraft}
-												<input
-													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
-													value={entry.unit}
-													oninput={(event) => handleFieldInput(index, 'unit', event)}
-												/>
-											{:else}
-												{entry.unit}
-											{/if}
+										<div class="px-0">
+											<input
+												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												value={entry.unit}
+												oninput={(event) => handleFieldInput(index, 'unit', event)}
+											/>
 										</div>
-										<div class="px-2 py-2 text-stone-600">
-											{#if entry.isDraft}
-												<textarea
-													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
-													rows="2"
-													value={entry.description}
-													oninput={(event) => handleFieldInput(index, 'description', event)}
-												></textarea>
-											{:else}
-												{entry.description}
-											{/if}
+										<div class="px-0 text-stone-600">
+											<input
+												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												value={entry.description}
+												oninput={(event) => handleFieldInput(index, 'description', event)}
+											/>
 										</div>
-										<div class="px-2 py-2">
-											{#if entry.isDraft}
-												<input
-													class="w-full rounded-md border border-transparent bg-transparent px-3 py-2 text-sm text-stone-800 transition outline-none focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
-													value={entry.action}
-													oninput={(event) => handleFieldInput(index, 'action', event)}
-												/>
-											{:else}
-												{entry.action}
-											{/if}
+										<div class="px-0">
+											<input
+												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												value={entry.action}
+												oninput={(event) => handleFieldInput(index, 'action', event)}
+											/>
 										</div>
-										<div class="relative px-2 py-2">
+										<div class="relative pl-1 py-2 items-center">
 											<button
 												class={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${statusStyles(entry.status)}`}
 												onclick={(event) => {
