@@ -38,6 +38,7 @@
 		action: string;
 		status: 'Pending' | 'In Progress' | 'Complete';
 		isDraft?: boolean;
+		unitFilter?: string;
 	}
 
 	const statusOptions: TableEntry['status'][] = ['Pending', 'In Progress', 'Complete'];
@@ -198,7 +199,7 @@
 	function toggleStatusMenu(index: number) {
 		openStatusIndex = openStatusIndex === index ? null : index;
 		openBuildingIndex = null;
-		openUnitIndex = null;
+		closeUnitMenu();
 	}
 
 	function updateStatus(targetIndex: number, status: TableEntry['status']) {
@@ -223,11 +224,16 @@
 	function toggleBuildingMenu(index: number) {
 		openBuildingIndex = openBuildingIndex === index ? null : index;
 		openStatusIndex = null;
-		openUnitIndex = null;
+		closeUnitMenu();
 	}
 
 	function toggleUnitMenu(index: number) {
-		openUnitIndex = openUnitIndex === index ? null : index;
+		if (openUnitIndex === index) {
+			closeUnitMenu();
+		} else {
+			closeUnitMenu();
+			openUnitIndex = index;
+		}
 		openBuildingIndex = null;
 		openStatusIndex = null;
 	}
@@ -236,11 +242,43 @@
 		return buildingUnits[building] ?? [];
 	}
 
+	function setUnitFilter(index: number, value: string) {
+		entries = entries.map((entry, entryIndex) =>
+			entryIndex === index ? { ...entry, unitFilter: value } : entry
+		);
+	}
+
+	function clearUnitFilter(index: number) {
+		entries = entries.map((entry, entryIndex) =>
+			entryIndex === index ? { ...entry, unitFilter: undefined } : entry
+		);
+	}
+
+	function getUnitDisplay(entry: TableEntry): string {
+		const filterValue = entry.unitFilter;
+		if (filterValue && filterValue.length > 0) return filterValue;
+		return entry.unit;
+	}
+
+	function getFilteredUnits(entry: TableEntry): string[] {
+		const filterValue = (entry.unitFilter ?? '').toLowerCase();
+		const units = getUnitOptions(entry.building);
+		if (!filterValue) return units;
+		return units.filter((unit) => unit.toLowerCase().includes(filterValue));
+	}
+
+	function closeUnitMenu() {
+		if (openUnitIndex !== null) {
+			clearUnitFilter(openUnitIndex);
+			openUnitIndex = null;
+		}
+	}
+
 	function selectBuilding(index: number, label: string) {
 		const units = getUnitOptions(label);
 		const updated = entries.map((entry, entryIndex) =>
 			entryIndex === index
-				? { ...entry, building: label, unit: units.length > 0 ? units[0] : '' }
+				? { ...entry, building: label, unit: units.length > 0 ? units[0] : '', unitFilter: undefined }
 				: entry
 		);
 		entries = updated;
@@ -248,8 +286,11 @@
 	}
 
 	function selectUnit(index: number, unitValue: string) {
-		updateEntryField(index, 'unit', unitValue);
-		openUnitIndex = null;
+		const updated = entries.map((entry, entryIndex) =>
+			entryIndex === index ? { ...entry, unit: unitValue, unitFilter: undefined } : entry
+		);
+		entries = updated;
+		closeUnitMenu();
 	}
 
 	function statusStyles(status: TableEntry['status']): string {
@@ -297,7 +338,7 @@
 			function handleClick() {
 				openStatusIndex = null;
 				openBuildingIndex = null;
-				openUnitIndex = null;
+				closeUnitMenu();
 			}
 		window.addEventListener('click', handleClick);
 		return () => {
@@ -420,20 +461,39 @@
 											{/if}
 										</div>
 										<div class="relative px-0">
-											<button
-												class="flex h-full w-full items-center justify-between rounded-md border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+											<input
+												class="h-full w-full border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
+												placeholder=""
+												value={getUnitDisplay(entry)}
+												onfocus={(event) => {
+													event.stopPropagation();
+													if (openUnitIndex !== index) {
+														closeUnitMenu();
+													}
+													openUnitIndex = index;
+												}}
 												onclick={(event) => {
 													event.stopPropagation();
-													toggleUnitMenu(index);
+													if (openUnitIndex !== index) {
+														closeUnitMenu();
+													}
+													openUnitIndex = index;
 												}}
-											>
-												{entry.unit || 'Select unit'}
-											</button>
+												oninput={(event) => {
+													event.stopPropagation();
+													if (openUnitIndex !== index) {
+														closeUnitMenu();
+													}
+													setUnitFilter(index, event.currentTarget.value);
+													openUnitIndex = index;
+												}}
+											/>
 											{#if openUnitIndex === index}
+												{@const filteredUnits = getFilteredUnits(entry)}
 												<div
-													class="absolute top-full left-0 z-10 mt-2 max-h-56 w-full min-w-32 overflow-y-auto rounded-md border border-stone-200 bg-white shadow-lg"
+													class="absolute top-full left-0 z-10 mt-2 max-h-56 w-full min-w-32 overflow-y-auto rounded-md border border-stone-200 bg-white text-sm shadow-lg"
 												>
-													{#each getUnitOptions(entry.building) as unitOption}
+													{#each filteredUnits as unitOption}
 														<button
 															class={`flex w-full items-center justify-between px-3 py-2 text-left text-sm text-stone-700 hover:bg-stone-100 ${
 																unitOption === entry.unit ? 'font-semibold text-stone-900' : ''
@@ -459,6 +519,9 @@
 															{/if}
 														</button>
 													{/each}
+													<div class="border-t border-stone-100 px-3 py-2 text-right text-[11px] uppercase tracking-wide text-stone-400">
+														{filteredUnits.length} units
+													</div>
 												</div>
 											{/if}
 										</div>
