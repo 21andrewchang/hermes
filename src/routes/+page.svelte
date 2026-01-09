@@ -1178,11 +1178,11 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 												onblur={() => handleFieldBlur(index)}
 											/>
 										</div>
-										<div class="relative pl-1 py-2 items-center pr-1">
+										<div class="relative flex min-h-[44px] items-center justify-start px-1">
 											{#if entry.status === 'Approval'}
-												<div class="flex items-center justify-center gap-2">
+												<div class="flex items-center justify-start gap-2">
 													<button
-														class="flex items-center pl-1 gap-1 rounded-md border border-stone-900 bg-stone-900 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-900"
+														class="flex items-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
 														onclick={(event) => {
 															event.stopPropagation();
 															approveFromApproval(index);
@@ -1196,15 +1196,14 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 															viewBox="0 0 16 16"
 														>
 															<path
-																class="text-emerald-500"
-																fill="currentColor"
+																fill="#34d399"
 																d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"
 															/>
 														</svg>
 														Yes
 													</button>
 													<button
-														class="flex items-center gap-1 rounded-md border border-stone-900 bg-stone-900 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-900"
+														class="flex items-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
 														onclick={(event) => {
 															event.stopPropagation();
 															moveToReview(index);
@@ -1218,8 +1217,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 															viewBox="0 0 16 16"
 														>
 															<path
-																class="text-rose-500"
-																fill="currentColor"
+																fill="#f87171"
 																d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 0 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06"
 															/>
 														</svg>
