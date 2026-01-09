@@ -857,11 +857,9 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 	function formatTimestamp(date: Date): string {
 		const month = date.getMonth() + 1;
 		const day = date.getDate();
-		const year = date.getFullYear();
 		const hours = date.getHours().toString().padStart(2, '0');
 		const minutes = date.getMinutes().toString().padStart(2, '0');
-		const seconds = date.getSeconds().toString().padStart(2, '0');
-		return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
+		return `${month}/${day} ${hours}:${minutes}`;
 	}
 
 	function addNewIssue() {
@@ -994,9 +992,9 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 
 					<div class="flex-1 overflow-hidden rounded-lg border border-stone-200">
 						<div
-							class="pl-2 grid grid-cols-[150px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+							class="pl-2 grid grid-cols-[100px_0.9fr_0.75fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
 						>
-							<div class="py-2">Time</div>
+							<div class="py-2 text-left">Time</div>
 							<div class="py-2">Building</div>
 							<div class="py-2">Unit</div>
 							<div class="py-2">Description</div>
@@ -1005,7 +1003,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 						</div>
 						<div class="relative">
 							<div
-								class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[150px_0.8fr_0.7fr_2fr_1.4fr_1fr]"
+								class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[100px_0.9fr_0.75fr_2fr_1.4fr_1fr]"
 							>
 								{#each Array(6) as _, index}
 									<div
@@ -1017,9 +1015,9 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 							<div class="relative">
 								{#each entries as entry, index (index)}
 									<div
-										class="grid grid-cols-[150px_0.8fr_0.7fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
+										class="grid grid-cols-[100px_0.9fr_0.75fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
 									>
-										<div class="flex items-center justify-center px-2 py-2 font-mono text-xs text-stone-500">
+										<div class="flex items-center px-2 py-2 font-mono text-xs text-stone-500">
 											{entry.time}
 										</div>
 										<div class="relative px-0">
