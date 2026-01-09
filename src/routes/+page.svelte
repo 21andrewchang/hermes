@@ -57,19 +57,12 @@
 		'Complete'
 	];
 	const buildingOptions = tabs.filter((tab) => tab.id !== 'inbox');
-	interface TenantRecord {
-		unit: string;
-		tenants: string[];
-		phones: string[];
-		emails: string[];
-		outstandingBalance: number | null;
-	}
 
 	interface BuildingProfile {
 		name: string;
 		address: string;
 		description: string;
-		records: TenantRecord[];
+		units: string[];
 	}
 	const buildingUnits: Record<string, string[]> = {
 		Mariposa: [
@@ -122,232 +115,60 @@
 		isPending?: boolean;
 	}
 
-const mariposaRecords: TenantRecord[] = [
-		{
-			unit: '101',
-			tenants: ['James Lim'],
-			phones: ['(213) 249-5473'],
-			emails: ['jameslim082762@gmail.com'],
-			outstandingBalance: 2431.45
+const buildingUnitMap: Record<BuildingTab, string[]> = {
+	mariposa: buildingUnits['Mariposa'],
+	willoughby: buildingUnits['Willoughby'],
+	stanford: buildingUnits['Stanford'],
+	sycamore: buildingUnits['Sycamore'],
+	pickford: buildingUnits['Pickford'],
+	'18th': buildingUnits['18th'],
+	'17th': buildingUnits['17th']
+};
+
+	const buildingProfiles: Record<BuildingTab, BuildingProfile> = {
+		mariposa: {
+			name: 'Mariposa',
+			address: '1234 W Mariposa Ave, Los Angeles, CA 90006',
+			description: 'Unit directory for Mariposa.',
+			units: buildingUnitMap.mariposa
 		},
-		{
-			unit: '201',
-			tenants: ['Jonghui Kim', 'Sulim Ji'],
-			phones: [],
-			emails: ['whdgnl4615@gmail.com', 'wltnwkzzz@gmail.com'],
-			outstandingBalance: null
+		willoughby: {
+			name: 'Willoughby',
+			address: '200 Willoughby Blvd, Los Angeles, CA 90010',
+			description: 'Unit directory for Willoughby.',
+			units: buildingUnitMap.willoughby
 		},
-		{
-			unit: '202',
-			tenants: ['Hwan Joon Huh', 'Ye Jin Lee'],
-			phones: ['(213) 841-3328', '(213) 700-1250'],
-			emails: ['dleft81@yahoo.com', 'djhuh10941@gmail.com'],
-			outstandingBalance: null
+		stanford: {
+			name: 'Stanford',
+			address: '855 Stanford Dr, Los Angeles, CA 90036',
+			description: 'Unit directory for Stanford.',
+			units: buildingUnitMap.stanford
 		},
-		{
-			unit: '203',
-			tenants: ['Kyungmin Lee', 'Minjung Park'],
-			phones: [],
-			emails: ['mylovelullu0317@gmail.com', 'pmjmj960902@gmail.com'],
-			outstandingBalance: null
+		sycamore: {
+			name: 'Sycamore',
+			address: '480 Sycamore Ave, Los Angeles, CA 90036',
+			description: 'Unit directory for Sycamore.',
+			units: buildingUnitMap.sycamore
 		},
-		{
-			unit: '204',
-			tenants: ['Rhayme Spencer', 'Ronnelle Copes'],
-			phones: ['(321) 482-2757', '(720) 975-6425'],
-			emails: ['rhaymespencer@gmail.com', 'ronnelleacopes@gmail.com'],
-			outstandingBalance: null
+		pickford: {
+			name: 'Pickford',
+			address: '4637 Pickford St, Los Angeles, CA 90019',
+			description: 'Unit directory for Pickford.',
+			units: buildingUnitMap.pickford
 		},
-		{
-			unit: '205',
-			tenants: ['Moonsool Park', 'Shenhwa Hong'],
-			phones: ['(213) 454-9048', '(213) 454-9048'],
-			emails: ['mrtjpark@gmail.com'],
-			outstandingBalance: 4753.77
+		'18th': {
+			name: '18th',
+			address: '18th Street Collection',
+			description: 'Unit directory for 18th Street.',
+			units: buildingUnitMap['18th']
 		},
-		{
-			unit: '206',
-			tenants: ['Yareli Morales', 'Jacob Kwasiborski'],
-			phones: ['(619) 410-7482', '(630) 989-0812'],
-			emails: ['yarelimorales@gmail.com', 'jakekwas@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '207',
-			tenants: ['Jung Sun Yoon', 'Seo-Yeon An', 'Yongmi An'],
-			phones: [],
-			emails: ['yoonjungsun31@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '301',
-			tenants: ['Jiah Kim', 'Jino Kim', 'Meung Si Ji'],
-			phones: ['(213) 377-4222', '(213) 215-8336', '(213) 235-8191'],
-			emails: ['topniveau.jiah@gmail.com', 'zino0802@gmail.com', 'order@msjtrim.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '302',
-			tenants: ['Catherine Pham', 'Ryan Feng', 'Xin Chen'],
-			phones: ['(408) 230-0592'],
-			emails: ['pham.uyen.catherine@gmail.com', 'feng.ryanfeng@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '303',
-			tenants: ['John Moon Ky Kim', 'Lisa Soo Hee Kim'],
-			phones: ['(213) 392-1333'],
-			emails: ['johnmkim878@gmail.com', 'powermom.min@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '304',
-			tenants: ['Heesuk Kim', 'In Seon Na'],
-			phones: ['(213) 399-0806'],
-			emails: ['heesukkim78@gmail.com', 'supernain@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '305',
-			tenants: ['Dennis Kuang', 'Chen Zheng'],
-			phones: ['(917) 628-7603', '(415) 806-1618'],
-			emails: ['tkuang25@gmail.com', 'chen.c.zheng86@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '306',
-			tenants: ['Jinsun Choi', 'Kiwook Uhm'],
-			phones: ['(213) 222-5666'],
-			emails: ['black8182@gmail.com', 'uhmk@hotmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '307',
-			tenants: ['Stacey Han', 'Paul Han'],
-			phones: ['(847) 977-5474'],
-			emails: ['staceyk1101@gmail.com', 'paul.i.han@gmail.com'],
-			outstandingBalance: 5657.78
-		},
-		{
-			unit: '308',
-			tenants: ['Jongok Lee', 'Junga Yoo'],
-			phones: ['(213) 700-0863'],
-			emails: ['mylovelullu0317@gmail.com', 'livemylife2020@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '401',
-			tenants: ['Jeffrey Kim', 'Joo Won Park'],
-			phones: ['(310) 266-3022'],
-			emails: ['danielajwpark@gmail.com'],
-			outstandingBalance: 75
-		},
-		{
-			unit: '402',
-			tenants: ['Grace Choe', 'Alexandra Boyd'],
-			phones: [],
-			emails: ['gracedchoe@gmail.com', 'alexandrakayboyd@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '403',
-			tenants: ['Alice Cage', 'Yong Kim'],
-			phones: ['(213) 800-3159'],
-			emails: ['kimc0422@gmail.com', 'pjeeyou@gmail.com'],
-			outstandingBalance: 7519.75
-		},
-		{
-			unit: '404',
-			tenants: ['Albee Zhang', 'Winnie Liu', 'Melody Huang'],
-			phones: ['(415) 671-9781', '(626) 620-5765'],
-			emails: ['albee1008@gmail.com', 'winnieliu0@gmail.com', 'melody94128@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '405',
-			tenants: ['Jake Kim', 'Sara Hansen'],
-			phones: ['(213) 544-2025'],
-			emails: ['jakeinwonderland@protonmail.com', 'sarahansen315@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '406',
-			tenants: ['Sangmi Lee', 'Dong Min Bang'],
-			phones: ['(213) 222-3533'],
-			emails: ['model232@gmail.com', 'dongminbang@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '407',
-			tenants: ['Yung Une Shin', 'Sang Kung Ham'],
-			phones: ['(213) 985-8849'],
-			emails: ['sharonyungshin@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '408',
-			tenants: ['Sodam Park', 'Ian Park'],
-			phones: ['(213) 779-3474'],
-			emails: ['yoodam0418@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '501',
-			tenants: ['Ted Kim'],
-			phones: ['(213) 200-9485'],
-			emails: ['tskim83tskim83@gmail.com'],
-			outstandingBalance: 3648.45
-		},
-		{
-			unit: '502',
-			tenants: ['Vajra Hodges', 'Anita Hodges'],
-			phones: ['(213) 447-4085', '(323) 687-3778'],
-			emails: ['waldorf2k1@gmail.com', 'hodges.anita.b@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '503',
-			tenants: ['Herbert Wei', 'Natasha Nguyen'],
-			phones: ['(832) 366-3983'],
-			emails: ['herbie.wei@gmail.com', 'natashadnguyen@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '504',
-			tenants: ['Brittany Sheets'],
-			phones: ['(310) 869-5461'],
-			emails: ['brittanyalexandria@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '505',
-			tenants: ['Taeyeong Jeong'],
-			phones: [],
-			emails: ['tedjeong8@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '506',
-			tenants: ['Hyunjae Jung', 'Kye Han', 'John Jung'],
-			phones: [],
-			emails: ['ehrckato9109@gmail.com', 'han0908@gmail.com', 'hello@iller.studio'],
-			outstandingBalance: null
-		},
-		{
-			unit: '507',
-			tenants: ['Michael Henderson', 'Lauren Parsons'],
-			phones: ['(310) 254-0493', '(805) 895-0706'],
-			emails: ['michaeljhenderson.comedy@gmail.com', 'lauren.m.parsons@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '508',
-			tenants: ['Rickey Moody', 'Stephanie Vong'],
-			phones: [],
-			emails: ['rickey.moody@gmail.com', 'stephanievong55@gmail.com'],
-			outstandingBalance: null
+		'17th': {
+			name: '17th',
+			address: '17th Street Collection',
+			description: 'Unit directory for 17th Street.',
+			units: buildingUnitMap['17th']
 		}
-	];
+	};
 
 	type IssueRecord = IssueRow;
 
@@ -367,7 +188,7 @@ const mariposaRecords: TenantRecord[] = [
 			unit: issue.unit ?? '',
 			description: issue.description ?? '',
 			action: issue.action ?? '',
-			status: issue.status ?? 'Pending',
+			status: issue.status ?? 'Approval',
 			isDraft: issue.is_draft ?? false
 		};
 	}
@@ -398,249 +219,7 @@ const statusRank: Record<TableEntry['status'], number> = {
 	Complete: 4
 };
 
-	const willoughbyRecords: TenantRecord[] = [
-		{
-			unit: '1',
-			tenants: ['Gleb Krivulin', 'John Lombardo'],
-			phones: ['(323) 616-9635', '(323) 363-9087'],
-			emails: ['glebby78@gmail.com', 'dushes2005@yahoo.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '2',
-			tenants: ['Brandon Piper', 'Jamison Scala'],
-			phones: ['(812) 457-6001', '(973) 903-1417'],
-			emails: [],
-			outstandingBalance: null
-		},
-		{
-			unit: '3',
-			tenants: ['Esi Impraim'],
-			phones: ['(310) 866-9493'],
-			emails: [],
-			outstandingBalance: null
-		},
-		{
-			unit: '4',
-			tenants: ['Alexander Novak', 'Jessica Sanchez'],
-			phones: ['(858) 353-3213'],
-			emails: ['alexnovak776@gmail.com', 'sanchezj_11@yahoo.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '5',
-			tenants: ['Marisa Truitt', 'Talia Pepe'],
-			phones: [],
-			emails: ['mtruitt@bu.edu', 'taliabella.co@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '6',
-			tenants: [],
-			phones: [],
-			emails: [],
-			outstandingBalance: null
-		},
-		{
-			unit: '7',
-			tenants: ['Codie Lavoie', 'Keepa Karmacharya'],
-			phones: ['(672) 514-2382', '(672) 515-1617'],
-			emails: [],
-			outstandingBalance: null
-		}
-	];
-
-	const stanfordRecords: TenantRecord[] = [
-		{
-			unit: '1',
-			tenants: [],
-			phones: [],
-			emails: [],
-			outstandingBalance: null
-		},
-		{
-			unit: '2',
-			tenants: ['Frank Pizzurro'],
-			phones: ['(646) 286-4790'],
-			emails: ['frankpnyc@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '3',
-			tenants: ['Taylor Taxin'],
-			phones: ['(516) 205-4345'],
-			emails: ['taylorjtaxin@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '4',
-			tenants: ['Michael Gaspar'],
-			phones: ['(301) 704-6616'],
-			emails: ['gpar89@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '5',
-			tenants: ['Lauren Fisher'],
-			phones: ['(917) 692-9411'],
-			emails: ['laurenhealthcoach1@gmail.com'],
-			outstandingBalance: null
-		},
-		{
-			unit: '6',
-			tenants: ['Adrian Swartz'],
-			phones: ['(310) 748-6031'],
-			emails: ['adrianetschwartz@gmail.com'],
-			outstandingBalance: null
-		}
-	];
-
-	const buildingProfiles: Record<BuildingTab, BuildingProfile> = {
-		mariposa: {
-			name: 'Mariposa',
-			address: '1234 W Mariposa Ave, Los Angeles, CA 90006',
-			description: 'Live ledger of tenants, contact info, and outstanding balances for Mariposa.',
-			records: mariposaRecords
-		},
-		willoughby: {
-			name: 'Willoughby',
-			address: '200 Willoughby Blvd, Los Angeles, CA 90010',
-			description: 'Tenant roster for Willoughby units with contact details and balances.',
-			records: willoughbyRecords
-		},
-		stanford: {
-			name: 'Stanford',
-			address: '855 Stanford Dr, Los Angeles, CA 90036',
-			description: 'Tenant roster for Stanford building with quick contacts for each unit.',
-			records: stanfordRecords
-		},
-		sycamore: {
-			name: 'Sycamore',
-			address: '480 Sycamore Ave, Los Angeles, CA 90036',
-			description: 'Tenant roster for Sycamore with quick contact and balance info.',
-			records: [
-				{
-					unit: '836',
-					tenants: ['Gabrielle Mazaltarim', 'Brianna Saavedra'],
-					phones: ['(925) 413-9679', '(209) 576-5317'],
-					emails: ['gabriellemazaltarim@gmail.com', 'briannasaavedra@gmail.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '836 1/2',
-					tenants: ['Margaux Snell'],
-					phones: [],
-					emails: ['gomargaux@gmail.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '838',
-					tenants: ['Tessa Lukosky'],
-					phones: ['(360) 566-7201'],
-					emails: ['tessa.lukosky@yahoo.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '838 1/2',
-					tenants: ['Alexandria Hopper'],
-					phones: ['(832) 689-6693'],
-					emails: ['alexnhopper@gmail.com'],
-					outstandingBalance: null
-				}
-			]
-		},
-		pickford: {
-			name: 'Pickford',
-			address: '1801 Pickford St, Los Angeles, CA 90035',
-			description: 'Tenant roster for Pickford units with contact information.',
-			records: [
-				{
-					unit: '4637',
-					tenants: ['Patricia Jones'],
-					phones: ['(323) 600-3219'],
-					emails: [],
-					outstandingBalance: null
-				},
-				{
-					unit: '4637 1/2',
-					tenants: ['Jade Watermiller', 'Andrew Trimbach'],
-					phones: ['(972) 816-2667'],
-					emails: ['andytrimbach@gmail.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '4639',
-					tenants: ['Leslie Betancourth'],
-					phones: [],
-					emails: ['lesli872008@gmail.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '4639 1/2',
-					tenants: ['Carolyn Hill'],
-					phones: [],
-					emails: ['cchill1125@gmail.com'],
-					outstandingBalance: null
-				}
-			]
-		},
-		'18th': {
-			name: '18th Street',
-			address: '350 W 18th St, Los Angeles, CA 90015',
-			description: 'Tenant roster for 18th Street with contacts per unit.',
-			records: [
-				{
-					unit: '1',
-					tenants: ['Delfino San Juan'],
-					phones: ['(323) 568-9833'],
-					emails: ['monkey_loks@yahoo.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '2',
-					tenants: ['Marleny Urrutia'],
-					phones: [],
-					emails: ['clarionrentals@gmail.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '3',
-					tenants: ['Marla Bradley'],
-					phones: ['(213) 361-6400'],
-					emails: ['marlabradley93@yahoo.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '4',
-					tenants: ['Jesus Rivera'],
-					phones: ['(323) 498-8886'],
-					emails: ['jesus_rivera21@yahoo.com'],
-					outstandingBalance: null
-				}
-			]
-		},
-		'17th': {
-			name: '17th Street',
-			address: '4725 W 17th St, Los Angeles, CA 90019',
-			description: 'Tenant roster for 17th Street with tenant contacts.',
-			records: [
-				{
-					unit: '4723',
-					tenants: ['Jonathan Kim', 'Hyun Woo Kang'],
-					phones: [],
-					emails: ['jonathanbkim97@gmail.com', 'hkang912@gmail.com'],
-					outstandingBalance: null
-				},
-				{
-					unit: '4725',
-					tenants: ['Gabriel Sampedro', 'Ben Reingold'],
-					phones: ['(617) 913-1858'],
-					emails: ['gabesampedro@gmail.com', 'benreingold@yahoo.com'],
-					outstandingBalance: null
-				}
-			]
-		}
-	};
+	
 
 	function sortEntries(list: TableEntry[]): TableEntry[] {
 		return [...list].sort((a, b) => {
@@ -817,18 +396,6 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 			clearUnitFilter(openUnitIndex);
 			openUnitIndex = null;
 		}
-	}
-
-	function formatCurrency(value: number): string {
-		return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
-	}
-
-	function formatBalance(value: number | null): string {
-		return value === null ? '—' : formatCurrency(value);
-	}
-
-	function totalOutstanding(records: TenantRecord[]): number {
-		return records.reduce((sum, record) => sum + (record.outstandingBalance ?? 0), 0);
 	}
 
 	function selectBuilding(index: number, label: string) {
@@ -1297,62 +864,19 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 
 					<div class="flex h-full flex-1 flex-col overflow-hidden rounded-lg border border-stone-200">
 						<div
-							class="grid grid-cols-[0.6fr_1.5fr_1.2fr_1.8fr_0.8fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500"
+							class="grid grid-cols-1 border-b border-stone-200 bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500"
 						>
-							<div class="px-3 py-2">Unit</div>
-							<div class="px-3 py-2">Tenant(s)</div>
-							<div class="px-3 py-2">Phone Number(s)</div>
-							<div class="px-3 py-2">Email</div>
-							<div class="px-3 py-2">Outstanding</div>
+							<div class="px-3 py-2">Units</div>
 						</div>
-						{#if profile.records.length > 0}
+						{#if profile.units.length > 0}
 							<div class="flex-1 overflow-y-auto divide-y divide-stone-200">
-								{#each profile.records as record}
-									<div class="grid grid-cols-[0.6fr_1.5fr_1.2fr_1.8fr_0.8fr] text-sm text-stone-800">
-										<div class="px-3 py-3 font-mono text-xs text-stone-500">{record.unit}</div>
-										<div class="px-3 py-3 pr-1 text-stone-900">
-											{#if record.tenants.length === 0}
-												<span class="text-stone-400">—</span>
-											{:else}
-												{#each record.tenants as tenant}
-													<span class="block">{tenant}</span>
-												{/each}
-											{/if}
-										</div>
-										<div class="px-3 py-3 text-stone-600">
-											{#if record.phones.length === 0}
-												<span class="text-stone-400">—</span>
-											{:else}
-												{#each record.phones as phone}
-													<span class="block">{phone}</span>
-												{/each}
-											{/if}
-										</div>
-										<div class="px-3 py-3 text-stone-600">
-											{#if record.emails.length === 0}
-												<span class="text-stone-400">—</span>
-											{:else}
-												{#each record.emails as email}
-													<span class="block">{email}</span>
-												{/each}
-											{/if}
-										</div>
-										<div class="px-3 py-3 font-semibold text-stone-900">
-											{formatBalance(record.outstandingBalance)}
-										</div>
-									</div>
+								{#each profile.units as unitNumber}
+									<div class="px-3 py-3 font-mono text-xs text-stone-600">{unitNumber}</div>
 								{/each}
 							</div>
-							<div class="flex items-center justify-between border-t border-stone-200 bg-stone-50 px-4 py-3 text-sm font-semibold text-stone-700">
-								<span>Total Outstanding Balance</span>
-								<span>{formatCurrency(totalOutstanding(profile.records))}</span>
-							</div>
 						{:else}
-							<div class="flex h-full flex-col items-center justify-center gap-2 px-6 py-12 text-center">
-								<p class="text-sm uppercase tracking-wide text-stone-400">No tenant data yet</p>
-								<p class="text-sm text-stone-600">
-									Add the roster for {profile.name} to populate this directory with contact details and balances.
-								</p>
+							<div class="flex h-full flex-col items-center justify-center gap-2 px-6 py-12 text-center text-sm text-stone-500">
+								No units available yet for {profile.name}.
 							</div>
 						{/if}
 					</div>
