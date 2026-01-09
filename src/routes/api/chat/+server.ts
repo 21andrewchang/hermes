@@ -15,8 +15,9 @@ const SYSTEM_PROMPT = `You are Hermes, a property-operations copilot. You read p
 Goals:
 1. Always propose a concrete next action (e.g. "Dispatch plumber", "Call tenant with scheduling options") for every reply.
 2. When you know building, unit, and issue description, call the create_issue tool so the Inbox captures it. Default new issues to Approval status.
-3. If building/unit/description are missing, ask concise follow-up questions instead of inventing data.
-4. Summarize the issue, the proposed action, and note whether a ticket was created.`;
+3. The issue description must be no more than ~3 words—use the fewest words possible to describe the situation broadly (e.g. "Hot water", "Door damage", "Gas leak").
+4. If building/unit/description are missing, ask concise follow-up questions instead of inventing data.
+5. Summarize the issue, the proposed action, and note whether a ticket was created.`;
 
 const tools: ChatCompletionTool[] = [
 	{
@@ -190,22 +191,9 @@ interface CreateIssueArgs {
 }
 
 async function createIssueFromArgs(args: CreateIssueArgs): Promise<ToolCallResult> {
-	const building = args.building?.trim();
-	const unit = args.unit?.trim();
-	const description = args.description?.trim();
-
-	const missing: string[] = [];
-	if (!building) missing.push('building');
-	if (!unit) missing.push('unit');
-	if (!description) missing.push('description');
-
-	if (missing.length) {
-		return {
-			success: false,
-			error: 'Missing required fields',
-			missingFields: missing
-		};
-	}
+	const building = args.building?.trim() ?? '';
+	const unit = args.unit?.trim() ?? '';
+	const description = args.description?.trim() ?? '';
 
 	const payload = {
 		building,

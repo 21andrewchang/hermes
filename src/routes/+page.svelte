@@ -1184,9 +1184,9 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 										</div>
 										<div class="relative flex min-h-[44px] items-center justify-start px-1">
 											{#if entry.status === 'Approval'}
-												<div class="flex items-center justify-start gap-2">
+												<div class="flex w-full items-center justify-start gap-2">
 													<button
-														class="flex items-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
+														class="flex w-full items-center justify-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
 														onclick={(event) => {
 															event.stopPropagation();
 															approveFromApproval(index);
@@ -1207,7 +1207,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 														Yes
 													</button>
 													<button
-														class="flex items-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
+														class="flex w-full items-center justify-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
 														onclick={(event) => {
 															event.stopPropagation();
 															moveToReview(index);
@@ -1360,8 +1360,8 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 			{/if}
 		</main>
 	</div>
-	<section class="flex w-1/4 flex-col border-l border-stone-200 bg-white">
-		<div class="flex flex-1 flex-col px-3 py-4">
+	<section class="flex w-1/4 flex-col border-l border-stone-200 bg-white overflow-hidden">
+		<div class="flex flex-1 flex-col px-3 py-4 overflow-hidden">
 			<div class="flex-1 space-y-3 overflow-y-auto pr-1">
 				{#each conversation as message}
 					<div class={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
