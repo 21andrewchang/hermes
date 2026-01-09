@@ -86,17 +86,33 @@ interface ToolCallResult {
 
 async function ensureSession(sessionId?: string): Promise<string> {
 	if (sessionId) return sessionId;
-	const { data, error } = await supabase
+
+	const { data: existing, error: existingError } = await supabase
+		.from('chat_sessions')
+		.select('id')
+		.order('created_at', { ascending: true })
+		.limit(1)
+		.maybeSingle();
+
+	if (existingError && existingError.code !== 'PGRST116') {
+		throw new Error(`Failed to lookup chat session: ${existingError.message}`);
+	}
+
+	if (existing?.id) {
+		return existing.id;
+	}
+
+	const { data: created, error: insertError } = await supabase
 		.from('chat_sessions')
 		.insert({ title: 'Inbox Assistant' })
 		.select('id')
 		.single();
 
-	if (error || !data?.id) {
-		throw new Error(`Failed to create chat session: ${error?.message ?? 'unknown error'}`);
+	if (insertError || !created?.id) {
+		throw new Error(`Failed to create chat session: ${insertError?.message ?? 'unknown error'}`);
 	}
 
-	return data.id;
+	return created.id;
 }
 
 async function insertMessage(sessionId: string, role: 'user' | 'assistant' | 'tool', content: string, toolName?: string | null, toolArgs?: string | null) {
