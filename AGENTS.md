@@ -1,270 +1,124 @@
-# AGENTS.md
+## Agentic Inbox Plan (Text Chat + Tool Calls)
 
-This file contains guidelines and commands for agentic coding agents working in this SvelteKit repository.
+### Overview
+- Goal: Turn the current Inbox (CRUD spreadsheet clone) into an agentic workflow where users paste an email/text into chat, the AI understands building/unit, proposes an action, and creates an Issue automatically.
+- Constraints: Keep `OPENAI_API_KEY` server‑side. Use SvelteKit runes, Supabase for data, and minimal UI disruption to current Inbox.
 
-## Project Overview
+### Desired UX
+- User pastes an email/SMS transcript into the chat and types “This is from unit 401 Mariposa”.
+- Assistant reads the text, extracts building/unit, description, infers status/action, and:
+  - Creates the Issue in Supabase (no empty rows), and
+  - Replies with a natural language summary + explicit action suggestion.
+- The Inbox list updates immediately with the newly created, fully populated row.
 
-Modern SvelteKit 5 project with TypeScript and Tailwind CSS v4. Uses Vite, ESLint, Prettier, and Vercel adapter. Strict TypeScript enabled.
+### Architecture
+- Client: Chat panel posts messages to a server endpoint.
+- Server: SvelteKit API endpoint orchestrates OpenAI tool calls. All model calls run server‑side.
+- Data: Issues live in Supabase `issues`. Add chat session/message tables for history and tool audit.
 
-## Essential Commands
+### Data Model (Supabase)
+- Tables
+  - `chat_sessions` (id uuid pk default gen_random_uuid(), title text, created_at timestamptz default now())
+  - `chat_messages` (
+    - id uuid pk default gen_random_uuid(),
+    - session_id uuid references chat_sessions(id) on delete cascade,
+    - role text check (role in ('user','assistant','tool')),
+    - content text not null default '',
+    - tool_name text null,
+    - tool_args jsonb null,
+    - created_at timestamptz default now()
+  )
+  - (Optional) `chat_runs` to log model, cost, timings
 
-### Development
+### OpenAI Integration
+- Library: `openai` (server‑only). Model: `gpt-4o-mini` (text) or `gpt-4o-mini-text`.
+- Tool calling: Define JSON‑schema tools the model can call; server executes, then returns updated messages back to the model if needed.
+- Core tool: `create_issue` with params { building, unit, description, action?, status='Pending', reported_at? }.
+- Support tools (as needed): `update_issue(id, fields)`, `search_units(building)`, `get_buildings()`.
 
-```bash
-npm run dev              # Start development server
-npm run dev -- --open    # Start dev server and open browser
+### API Endpoints (SvelteKit)
+- `POST /api/chat` (server)
+  - Body: { sessionId?, text, context: { building?, unit? } }
+  - Steps:
+    1) Persist user message in `chat_messages`.
+    2) Build OpenAI messages with a system prompt and the user text.
+    3) Provide tool definitions; call model.
+    4) If model returns a tool call, execute it (e.g., write to `issues`).
+    5) Persist tool result as a `tool` message. Optionally re‑call the model to produce a final assistant message.
+    6) Return assistant message and any created issue record to the client.
+
+### System Prompt (Sketch)
+- “You are a property ops assistant. Extract building, unit, description, and suggest an action from pasted emails/texts. Prefer calling tools when you can create or update an issue; ask clarifying questions if required fields are missing. Never invent data.”
+
+### Tools (Function Specs)
+- `create_issue`
+  - description: Create a new issue in the inbox.
+  - input: {
+    - building: string,
+    - unit: string,
+    - description: string,
+    - action?: string,
+    - status?: 'Pending' | 'In Progress' | 'Complete',
+    - reported_at?: string (ISO)
+  }
+  - returns: the created issue row from Supabase.
+- (Optional) `update_issue`, `search_units`, `get_buildings` to help the model resolve ambiguity.
+
+- Compose chat message: plain text; POST to `/api/chat`.
+- Display assistant replies with inline “Created Issue #ID” + suggested action text.
+- When an issue is created via tool, optimistically insert into current `entries` (or re‑fetch server data), mapping to the existing `TableEntry` shape.
+- Guardrails (existing): only complete issues upsert; single draft at a time.
+
+### Incremental Implementation Plan
+1) Tables
+   - Create `chat_sessions`, `chat_messages` tables.
+2) Chat API (non‑streaming)
+   - `POST /api/chat` that calls OpenAI with tools, handles one tool call (create_issue), and returns final assistant text + created issue (if any).
+3) Client wiring
+   - Use existing chat input; send message to `/api/chat`; update Inbox on response.
+4) Validation & UX
+   - If model lacks required fields, assistant asks a clarifying question rather than creating an empty issue.
+5) Streaming (optional)
+   - Upgrade `/api/chat` to SSE for token streaming; progressive UI updates.
+
+### Supabase SQL (COMPLETED BY USER)
+```sql
+create table if not exists public.chat_sessions (
+	id uuid primary key default gen_random_uuid(),
+	title text,
+	created_at timestamptz not null default now()
+);
+
+create table if not exists public.chat_messages (
+	id uuid primary key default gen_random_uuid(),
+	session_id uuid not null references public.chat_sessions(id) on delete cascade,
+	role text not null check (role in ('user','assistant','tool')),
+	content text not null default '',
+	tool_name text,
+	tool_args jsonb,
+	created_at timestamptz not null default now()
+);
+
+create index if not exists chat_messages_session_idx on public.chat_messages(session_id, created_at);
 ```
 
-### Building & Deployment
-
-```bash
-npm run build           # Create production build
-npm run preview         # Preview production build locally
-```
-
-### Type Checking
-
-```bash
-npm run check           # Run svelte-check type checking
-npm run check:watch     # Run type checking in watch mode
-```
-
-### Code Quality
-
-```bash
-npm run lint            # Run ESLint and Prettier check
-npm run format          # Format code with Prettier
-```
-
-### Project Maintenance
-
-```bash
-npm run prepare         # Sync SvelteKit (run after package changes)
-```
-
-## Code Style Guidelines
-
-### Formatting Rules
-
-- **Indentation**: Use tabs (not spaces)
-- **Quotes**: Single quotes for strings
-- **Trailing commas**: None
-- **Line width**: 100 characters maximum
-- **Semicolons**: Use where required
-
-### Svelte 5 Modern Syntax
-
-- Use runes syntax: `$props()`, `$state()`, `$derived()`, `$effect()`
-- Prefer `<script lang="ts">` blocks
-- Use `{@render children()}` for slot patterns
-- Use `$bindable()` for two-way binding when needed
-
-### TypeScript Requirements
-
-- **Strict mode**: Enabled, no implicit any
-- **Explicit typing**: All functions, variables, and props
-- **Interfaces**: Use for object shapes, types for primitives/unions
-- **Never use `any`**: Always prefer proper typing
-
-### Import Patterns
-
-```typescript
-import type { ComponentType } from '$lib/types';
-import { myFunction } from '$lib/utils';
-import MyComponent from '$lib/components/MyComponent.svelte';
-import favicon from '$lib/assets/favicon.svg';
-```
-
-### Component Conventions
-
-- **File naming**: PascalCase for components (MyComponent.svelte)
-- **Props typing**: Always type props with interfaces
-- **Reactivity**: Use `$state()` for local state, stores for global state
-- **Events**: Use Svelte event dispatching with proper typing
-
-## File Structure & Conventions
-
-### SvelteKit Routing
-
-```
-src/routes/
-├── +layout.svelte      # Root layout
-├── +page.svelte        # Home page
-├── about/
-│   └── +page.svelte    # About page
-└── api/
-    └── +server.ts      # API routes
-```
-
-### Library Organization
-
-```
-src/lib/
-├── components/         # Reusable UI components
-├── types/             # TypeScript type definitions
-├── utils/             # Utility functions
-├── stores/            # Svelte stores
-└── assets/            # Static assets (images, icons)
-```
-
-### TypeScript Declarations
-
-- Use `src/app.d.ts` for global type extensions
-- Define App namespace interfaces for SvelteKit
-- Export types from `src/lib/types/` for reuse
-
-## Development Best Practices
-
-### Error Handling
-
-```typescript
-try {
-	const result = await apiCall();
-	return { success: true, data: result };
-} catch (error) {
-	console.error('API call failed:', error);
-	return { success: false, error: error.message };
-}
-```
-
-### Performance Optimization
-
-- Use SvelteKit's built-in code splitting
-- Lazy load heavy components with dynamic imports
-- Optimize images and assets
-- Use `loading` patterns for better UX
-
-### Accessibility
-
-- Use semantic HTML elements
-- Add ARIA labels where needed
-- Ensure keyboard navigation
-- Test with screen readers
-
-### State Management
-
-- Use `$state()` for component-local state
-- Use Svelte stores for cross-component state
-- Consider server state vs client state
-- Use SvelteKit's load functions for data fetching
-
-## CSS and Styling
-
-### Tailwind CSS v4
-
-- Use CSS-first approach with `@import 'tailwindcss'`
-- Utility classes in component markup
-- Custom CSS in component `<style>` blocks when needed
-- Responsive design with mobile-first approach
-
-### Styling Patterns
-
-```svelte
-<div class="flex items-center justify-between rounded-lg bg-white p-4 shadow">
-	<h2 class="text-xl font-semibold text-gray-900">{title}</h2>
-	<button class="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-		{buttonText}
-	</button>
-</div>
-```
-
-## Testing Strategy
-
-### Current Status
-
-No testing framework is currently configured in this project.
-
-### Recommended Setup
-
-When adding tests, use:
-
-- **Vitest** for unit testing
-- **Svelte Testing Library** for component testing
-- **Playwright** for end-to-end testing
-
-### Test Organization
-
-```
-src/
-├── components/
-│   ├── MyComponent.svelte
-│   └── __tests__/
-│       └── MyComponent.test.ts
-└── lib/
-    ├── utils/
-    │   ├── myUtil.ts
-    │   └── __tests__/
-    │       └── myUtil.test.ts
-```
-
-## Tooling Integration
-
-### ESLint Configuration
-
-- TypeScript + Svelte rules enabled
-- Prettier integration for consistent formatting
-- Custom rules in `eslint.config.js`
-
-### Prettier Configuration
-
-- Svelte plugin for .svelte files
-- Tailwind plugin for CSS class sorting
-- Configuration in `.prettierrc`
-
-### VS Code Settings
-
-- Tailwind CSS file associations configured
-- Recommended extensions: Svelte, TypeScript, Tailwind
-
-### Git Configuration
-
-- Strict npm engine versioning enabled
-- Proper ignore patterns for build artifacts
-- Pre-commit hooks recommended for lint/format
-
-## Common Patterns
-
-### API Data Fetching
-
-```typescript
-export async function load({ fetch }) {
-	const response = await fetch('/api/data');
-	const data = await response.json();
-	return { data };
-}
-```
-
-### Form Handling
-
-```typescript
-export const actions = {
-	default: async ({ request }) => {
-		const formData = await request.formData();
-		return { success: true };
-	}
-};
-```
-
-### Component Props
-
-```typescript
-interface Props {
-	title: string;
-	count?: number;
-	onSubmit?: (value: string) => void;
-}
-
-let { title, count = 0, onSubmit }: Props = $props();
-```
-
-## Before Committing
-
-Always run these commands before committing:
-
-```bash
-npm run check    # Ensure TypeScript passes
-npm run lint     # Check code quality
-npm run format   # Format code if needed
-```
-
-this ensures the codebase maintains high quality and consistency across all contributions.
+### Server Stubs (Files to Add)
+- `src/routes/api/chat/+server.ts`: orchestrates OpenAI tool calls (create_issue), persists chat history, returns assistant message + issue.
+- `src/lib/server/openai.ts`: OpenAI client with `OPENAI_API_KEY` (server‑only env).
+- `src/lib/ai/tools.ts`: Type‑safe tool registry (create_issue, update_issue…).
+
+### Security & Limits
+- Never expose `OPENAI_API_KEY` to the browser; all calls from server routes.
+- Consider rate limiting `/api/chat` per session/IP.
+
+- Paste email/SMS text into chat; server receives the text.
+- Assistant extracts building/unit/description from the pasted text or user hint.
+- Assistant calls `create_issue`; Supabase `issues` row is created; Inbox updates immediately.
+- Assistant replies with a human summary and a suggested action.
+- If required fields are missing, assistant asks a clarifying question instead of creating an empty issue.
+
+### Stretch Goals
+- OCR fallback for low‑quality images.
+- Multi‑turn tool use: ask for missing unit/building, then create.
+- Streaming assistant responses.
+- RAG over building/unit knowledge (tenant rosters, vendor playbooks).
