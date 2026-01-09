@@ -110,10 +110,10 @@
 	type EditableField = 'building' | 'unit' | 'description' | 'action';
 
 	interface ChatMessage {
-		id: number;
+		id: string;
 		role: 'user' | 'assistant';
 		content: string;
-		timestamp: string;
+		isPending?: boolean;
 	}
 
 const mariposaRecords: TenantRecord[] = [
@@ -371,6 +371,18 @@ const mariposaRecords: TenantRecord[] = [
 	}
 
 	const initialEntries: TableEntry[] = mapIssuesToEntries(props.data.issues ?? []);
+
+	function upsertEntryFromIssue(issue: IssueRecord) {
+		const entry = issueToEntry(issue);
+		const index = entries.findIndex((item) => item.id === entry.id);
+		if (index >= 0) {
+			const updated = [...entries];
+			updated[index] = { ...entry, unitFilter: entries[index].unitFilter };
+			entries = sortEntries(updated);
+		} else {
+			entries = sortEntries([...entries, entry]);
+		}
+	}
 
 const statusRank: Record<TableEntry['status'], number> = {
 	Pending: 0,
@@ -702,29 +714,18 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 	return tab !== 'inbox';
 }
 
-const conversation: ChatMessage[] = [
+	let conversation = $state<ChatMessage[]>([
 		{
-			id: 1,
+			id: 'welcome',
 			role: 'assistant',
-			content: 'Hi Esther! Need help summarizing today’s property issues?',
-			timestamp: '09:12'
-		},
-		{
-			id: 2,
-			role: 'user',
-			content: 'Give me the quick takeaways for Mariposa.',
-			timestamp: '09:14'
-		},
-		{
-			id: 3,
-			role: 'assistant',
-			content:
-				'Four open tickets: two dishwashers awaiting vendor confirmation, one gas leak resolved, one shower repair pending approval.',
-			timestamp: '09:14'
+			content: 'Paste an email or SMS and I will summarize it and create an issue for you.'
 		}
-	];
+	]);
 
 	let chatInput = $state('');
+	let chatSessionId = $state<string | null>(null);
+	let isSendingMessage = $state(false);
+	let chatError = $state<string | null>(null);
 
 	function toggleStatusMenu(index: number) {
 		openStatusIndex = openStatusIndex === index ? null : index;
@@ -882,9 +883,60 @@ const conversation: ChatMessage[] = [
 		entries = sortEntries([...entries, draftEntry]);
 	}
 
+	async function sendChatMessage() {
+		const messageText = chatInput.trim();
+		if (!messageText || isSendingMessage) return;
+
+		chatError = null;
+		chatInput = '';
+		const localMessage: ChatMessage = {
+			id: createEntryId(),
+			role: 'user',
+			content: messageText
+		};
+		conversation = [...conversation, localMessage];
+		isSendingMessage = true;
+
+		try {
+			const response = await fetch('/api/chat', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					sessionId: chatSessionId,
+					text: messageText
+				})
+			});
+
+			const result = await response.json();
+			if (!response.ok) {
+				throw new Error(result?.error ?? 'Assistant request failed');
+			}
+
+			if (result.sessionId) {
+				chatSessionId = result.sessionId;
+			}
+
+			if (result.issue) {
+				upsertEntryFromIssue(result.issue as IssueRecord);
+			}
+
+			const assistantMessage: ChatMessage = {
+				id: (result.messageId as string | undefined) ?? createEntryId(),
+				role: 'assistant',
+				content: (result.message as string | undefined) ?? 'Issue updated.'
+			};
+			conversation = [...conversation, assistantMessage];
+		} catch (error) {
+			console.error('Failed to send chat message', error);
+			chatError = 'Unable to reach Hermes. Please try again.';
+		} finally {
+			isSendingMessage = false;
+		}
+	}
+
 	function handleSend(event: SubmitEvent) {
 		event.preventDefault();
-		chatInput = '';
+		void sendChatMessage();
 	}
 
 	$effect(() => {
@@ -1252,28 +1304,44 @@ const conversation: ChatMessage[] = [
 					id="copilot-input"
 					class="w-full resize-none rounded-2xl border border-stone-200 bg-white px-4 py-3 pr-16 text-sm text-xs text-stone-800 shadow-sm transition outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
 					rows="3"
-					placeholder="Drag in context, complete issues"
+					placeholder="Paste an email or SMS conversation, e.g. This is from unit 401 Mariposa"
 					bind:value={chatInput}
+					disabled={isSendingMessage}
 				></textarea>
 				<button
 					type="submit"
-					class="absolute right-2 bottom-3 flex h-6 w-6 items-center justify-center rounded-full bg-black text-white shadow-sm transition hover:bg-white"
+					class={`absolute right-2 bottom-3 flex h-6 w-6 items-center justify-center rounded-full text-white shadow-sm transition ${
+						isSendingMessage || chatInput.trim().length === 0
+							? 'cursor-not-allowed bg-stone-400'
+							: 'bg-black hover:bg-white hover:text-black'
+					}`}
 					aria-label="Send message"
+					disabled={isSendingMessage || chatInput.trim().length === 0}
 				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="16"
-						height="16"
-						fill="none"
-						viewBox="0 0 16 16"
-					>
-						<path
-							fill="currentColor"
-							d="M8 12.75a.75.75 0 0 1-.75-.75V5.81l-2.22 2.22a.75.75 0 0 1-1.06-1.06l3.5-3.5a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 1 1-1.06 1.06L8.75 5.81V12a.75.75 0 0 1-.75.75Z"
-						/>
-					</svg>
+					{#if isSendingMessage}
+						<svg class="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+							<circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4"></circle>
+							<path class="opacity-75" d="M4 12a8 8 0 0 1 8-8" stroke-width="4" stroke-linecap="round"></path>
+						</svg>
+					{:else}
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							width="16"
+							height="16"
+							fill="none"
+							viewBox="0 0 16 16"
+						>
+							<path
+								fill="currentColor"
+								d="M8 12.75a.75.75 0 0 1-.75-.75V5.81l-2.22 2.22a.75.75 0 0 1-1.06-1.06l3.5-3.5a.75.75 0 0 1 1.06 0l3.5 3.5a.75.75 0 1 1-1.06 1.06L8.75 5.81V12a.75.75 0 0 1-.75.75Z"
+							/>
+						</svg>
+					{/if}
 				</button>
 			</form>
+			{#if chatError}
+				<p class="mt-2 text-xs text-rose-600">{chatError}</p>
+			{/if}
 		</div>
 	</section>
 </div>
