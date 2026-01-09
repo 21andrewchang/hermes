@@ -1361,15 +1361,15 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 		</main>
 	</div>
 	<section class="flex w-1/4 flex-col border-l border-stone-200 bg-white">
-		<div class="flex flex-1 flex-col px-4 py-4">
-			<div class="flex-1 space-y-4 overflow-y-auto pr-1">
+		<div class="flex flex-1 flex-col px-3 py-4">
+			<div class="flex-1 space-y-3 overflow-y-auto pr-1">
 				{#each conversation as message}
 					<div class={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
 						<div
-							class={`w-full rounded-xl px-4 py-3 text-sm ${
+							class={`w-full rounded-xl py-3 text-sm ${
 								message.role === 'assistant'
 									? 'bg-transparent text-stone-700'
-									: 'bg-stone-100 text-stone-900'
+									: 'bg-stone-100 text-stone-900 px-4'
 							}`}
 						>
 							<p>{message.content}</p>
@@ -1381,7 +1381,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 				<label class="sr-only" for="copilot-input">Ask Hermes</label>
 				<textarea
 					id="copilot-input"
-					class="w-full resize-none rounded-2xl border border-stone-200 bg-white px-4 py-3 pr-16 text-sm text-xs text-stone-800 shadow-sm transition outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
+					class="w-full resize-none rounded-2xl border border-stone-200 bg-white px-3 py-3 pr-14 text-sm text-xs text-stone-800 shadow-sm transition outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200"
 					rows="3"
 					placeholder="Paste an email or SMS conversation, e.g. This is from unit 401 Mariposa"
 					bind:value={chatInput}
