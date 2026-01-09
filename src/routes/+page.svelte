@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { supabase } from '$lib/supabase';
+	import type { IssueRow } from '$lib/types/issues';
 
 	type Tab =
 		| 'inbox'
@@ -32,10 +34,12 @@
 	);
 
 	let activeTab = $state<Tab>('inbox');
-	const { data } = $props<{ data: PageData }>();
+	const props = $props<{ data: PageData }>();
 
 	interface TableEntry {
+		id: string;
 		time: string;
+		reportedAt: string;
 		building: string;
 		unit: string;
 		description: string;
@@ -111,29 +115,6 @@
 		content: string;
 		timestamp: string;
 	}
-
-	type IssueRecord = PageData['issues'] extends Array<infer Issue> ? Issue : never;
-
-	function formatIssueTimestamp(value: string | null): string {
-		if (!value) return '';
-		const parsed = new Date(value);
-		if (Number.isNaN(parsed.getTime())) return value;
-		return formatTimestamp(parsed);
-	}
-
-	function mapIssuesToEntries(issues: IssueRecord[]): TableEntry[] {
-		return issues.map((issue) => ({
-			time: formatIssueTimestamp(issue.reported_at ?? null),
-			building: issue.building ?? '',
-			unit: issue.unit ?? '',
-			description: issue.description ?? '',
-			action: issue.action ?? '',
-			status: (issue.status as TableEntry['status']) ?? 'Pending',
-			isDraft: issue.is_draft ?? false
-		}));
-	}
-
-	const initialEntries: TableEntry[] = mapIssuesToEntries(data.issues ?? []);
 
 const mariposaRecords: TenantRecord[] = [
 		{
@@ -361,6 +342,35 @@ const mariposaRecords: TenantRecord[] = [
 			outstandingBalance: null
 		}
 	];
+
+	type IssueRecord = IssueRow;
+
+	function formatIssueTimestamp(value: string | null): string {
+		if (!value) return '';
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) return value;
+		return formatTimestamp(parsed);
+	}
+
+	function issueToEntry(issue: IssueRecord): TableEntry {
+		return {
+			id: issue.id,
+			reportedAt: issue.reported_at ?? new Date().toISOString(),
+			time: formatIssueTimestamp(issue.reported_at),
+			building: issue.building ?? '',
+			unit: issue.unit ?? '',
+			description: issue.description ?? '',
+			action: issue.action ?? '',
+			status: issue.status ?? 'Pending',
+			isDraft: issue.is_draft ?? false
+		};
+	}
+
+	function mapIssuesToEntries(issues: IssueRecord[]): TableEntry[] {
+		return issues.map(issueToEntry);
+	}
+
+	const initialEntries: TableEntry[] = mapIssuesToEntries(props.data.issues ?? []);
 
 const statusRank: Record<TableEntry['status'], number> = {
 	Pending: 0,
@@ -620,7 +630,71 @@ const statusRank: Record<TableEntry['status'], number> = {
 		});
 	}
 
+	function isEntryComplete(entry: TableEntry): boolean {
+		return (
+			entry.building.trim().length > 0 && entry.unit.trim().length > 0 && entry.description.trim().length > 0
+		);
+	}
+
+	function entryToPayload(entry: TableEntry) {
+		return {
+			id: entry.id,
+			reported_at: entry.reportedAt ?? new Date().toISOString(),
+			building: entry.building,
+			unit: entry.unit,
+			description: entry.description,
+			action: entry.action,
+			status: entry.status,
+			is_draft: entry.isDraft ?? false
+		};
+	}
+
+	async function saveIssue(entry: TableEntry): Promise<void> {
+		const { data, error } = await supabase
+			.from('issues')
+			.upsert(entryToPayload(entry))
+			.select('id, reported_at, building, unit, description, action, status, is_draft')
+			.single();
+
+		if (error) {
+			console.error('Failed to save issue:', error);
+			return;
+		}
+
+		if (!data) return;
+
+		const updatedEntry = issueToEntry(data as IssueRecord);
+		entries = entries.map((current) =>
+			current.id === updatedEntry.id ? { ...updatedEntry, unitFilter: current.unitFilter } : current
+		);
+	}
+
+	function persistEntryById(id?: string) {
+		if (!id) return;
+		const target = entries.find((entry) => entry.id === id);
+		if (!target || !isEntryComplete(target)) return;
+		const cleanEntry = { ...target, isDraft: false };
+		entries = entries.map((entry) => (entry.id === id ? cleanEntry : entry));
+		void saveIssue(cleanEntry);
+	}
+
+	function handleFieldBlur(index: number) {
+		const target = entries[index];
+		persistEntryById(target?.id);
+	}
+
+	function createEntryId(): string {
+		if (typeof crypto.randomUUID === 'function') {
+			return crypto.randomUUID();
+		}
+		const bytes = crypto.getRandomValues(new Uint8Array(16));
+		return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+	}
+
 let entries = $state(sortEntries(initialEntries));
+function hasIncompleteDraft(): boolean {
+	return entries.some((entry) => entry.isDraft && !isEntryComplete(entry));
+}
 let openStatusIndex = $state<number | null>(null);
 let openBuildingIndex = $state<number | null>(null);
 let openUnitIndex = $state<number | null>(null);
@@ -659,10 +733,12 @@ const conversation: ChatMessage[] = [
 	}
 
 	function updateStatus(targetIndex: number, status: TableEntry['status']) {
+		const targetId = entries[targetIndex]?.id;
 		const updated = entries.map((entry, index) =>
 			index === targetIndex ? { ...entry, status } : entry
 		);
 		entries = sortEntries(updated);
+		persistEntryById(targetId);
 	}
 
 	function updateEntryField(index: number, field: EditableField, value: string) {
@@ -743,6 +819,7 @@ const conversation: ChatMessage[] = [
 	}
 
 	function selectBuilding(index: number, label: string) {
+		const targetId = entries[index]?.id;
 		const units = getUnitOptions(label);
 		const updated = entries.map((entry, entryIndex) =>
 			entryIndex === index
@@ -751,14 +828,17 @@ const conversation: ChatMessage[] = [
 		);
 		entries = updated;
 		openBuildingIndex = null;
+		persistEntryById(targetId);
 	}
 
 	function selectUnit(index: number, unitValue: string) {
+		const targetId = entries[index]?.id;
 		const updated = entries.map((entry, entryIndex) =>
 			entryIndex === index ? { ...entry, unit: unitValue, unitFilter: undefined } : entry
 		);
 		entries = updated;
 		closeUnitMenu();
+		persistEntryById(targetId);
 	}
 
 	function statusStyles(status: TableEntry['status']): string {
@@ -784,8 +864,13 @@ const conversation: ChatMessage[] = [
 	}
 
 	function addNewIssue() {
+		if (hasIncompleteDraft()) {
+			return;
+		}
 		const now = new Date();
 		const draftEntry: TableEntry = {
+			id: createEntryId(),
+			reportedAt: now.toISOString(),
 			time: formatTimestamp(now),
 			building: '',
 			unit: '',
@@ -1002,6 +1087,7 @@ const conversation: ChatMessage[] = [
 												class="h-full w-full rounded-md border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
 												value={entry.description}
 												oninput={(event) => handleFieldInput(index, 'description', event)}
+												onblur={() => handleFieldBlur(index)}
 											/>
 										</div>
 										<div class="px-0">
@@ -1009,18 +1095,19 @@ const conversation: ChatMessage[] = [
 												class="h-full w-full rounded-md border border-transparent bg-transparent px-2 py-2 text-sm text-stone-800 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200"
 												value={entry.action}
 												oninput={(event) => handleFieldInput(index, 'action', event)}
+												onblur={() => handleFieldBlur(index)}
 											/>
 										</div>
 										<div class="relative pl-1 py-2 items-center">
 											<button
-												class={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${statusStyles(entry.status)}`}
+												class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyles(entry.status)}`}
 												onclick={(event) => {
 													event.stopPropagation();
 													toggleStatusMenu(index);
 												}}
 											>
 												<span
-													class={`h-2.5 w-2.5 rounded-full ${statusDotStyles(entry.status)}`}
+													class={`h-2 w-2 rounded-full ${statusDotStyles(entry.status)}`}
 													aria-hidden="true"
 												></span>
 												{entry.status}

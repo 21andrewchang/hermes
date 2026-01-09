@@ -1,7 +1,8 @@
 import type { PageServerLoad } from './$types';
-import { supabase } from '$lib/server/supabase';
+import { supabase } from '$lib/supabase';
+import type { IssueRow } from '$lib/types/issues';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad<{ issues: IssueRow[] }> = async () => {
 	const { data, error } = await supabase
 		.from('issues')
 		.select(
