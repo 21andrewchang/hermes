@@ -11,11 +11,12 @@ import type { IssueRow, IssueStatus } from '$lib/types/issues';
 const MODEL = 'gpt-4o-mini';
 const ISSUE_STATUSES: IssueStatus[] = ['Approval', 'Review', 'Pending', 'In Progress', 'Complete'];
 
-const SYSTEM_PROMPT = `You are Hermes, a property operations copilot. You read pasted tenant emails or SMS transcripts and help
-humans track work. Every conversation must end with actionable next steps. When you have enough data
-(building, unit, and an issue description), call the create_issue tool to add it to the Inbox. If the user did not
-provide building, unit, or description, ask concise follow-up questions instead of guessing. Always summarize
-the issue, the suggested action, and note whether a ticket was created.`;
+const SYSTEM_PROMPT = `You are Hermes, a property-operations copilot. You read pasted tenant emails or SMS transcripts and help humans track work.
+Goals:
+1. Always propose a concrete next action (e.g. "Dispatch plumber", "Call tenant with scheduling options") for every reply.
+2. When you know building, unit, and issue description, call the create_issue tool so the Inbox captures it. Default new issues to Approval status.
+3. If building/unit/description are missing, ask concise follow-up questions instead of inventing data.
+4. Summarize the issue, the proposed action, and note whether a ticket was created.`;
 
 const tools: ChatCompletionTool[] = [
 	{
@@ -175,8 +176,8 @@ function buildHistoryMessages(rows: ChatMessageRow[]): ChatCompletionMessagePara
 }
 
 function normalizeStatus(value?: string | null): IssueStatus {
-	if (!value) return 'Pending';
-	return ISSUE_STATUSES.includes(value as IssueStatus) ? (value as IssueStatus) : 'Pending';
+	if (!value) return 'Approval';
+	return ISSUE_STATUSES.includes(value as IssueStatus) ? (value as IssueStatus) : 'Approval';
 }
 
 interface CreateIssueArgs {
