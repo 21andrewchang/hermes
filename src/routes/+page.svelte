@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { PageData } from './$types';
+
 	type Tab =
 		| 'inbox'
 		| 'mariposa'
@@ -30,6 +32,7 @@
 	);
 
 	let activeTab = $state<Tab>('inbox');
+	const { data } = $props<{ data: PageData }>();
 
 	interface TableEntry {
 		time: string;
@@ -109,64 +112,28 @@
 		timestamp: string;
 	}
 
-	const initialEntries: TableEntry[] = [
-		{
-			time: '1/7/2026 21:16:35',
-			building: 'Mariposa',
-			unit: '206',
-			description: 'Cigarette smoke smell issue',
-			action: 'Esther notified',
-			status: 'In Progress'
-		},
-		{
-			time: '1/7/2026 20:41:39',
-			building: 'Mariposa',
-			unit: '408',
-			description: 'Gas leak',
-			action: 'Sent Esther',
-			status: 'Complete'
-		},
-		{
-			time: '1/7/2026 10:50:01',
-			building: 'Willoughby',
-			unit: '5',
-			description: 'Rental verification + reference check',
-			action: '',
-			status: 'Complete'
-		},
-		{
-			time: '1/6/2026 10:44:01',
-			building: 'Willoughby',
-			unit: '5',
-			description: 'Bathroom shower door broken',
-			action: '',
-			status: 'Pending'
-		},
-		{
-			time: '1/5/2026 9:27:02',
-			building: 'Mariposa',
-			unit: '501',
-			description: 'Dishwasher broken',
-			action: 'Contacted appliance guy',
-			status: 'In Progress'
-		},
-		{
-			time: '1/4/2026 14:03:26',
-			building: 'Mariposa',
-			unit: '407',
-			description: 'Dishwasher broken',
-			action: 'Contacted appliance guy',
-			status: 'In Progress'
-		},
-		{
-			time: '1/3/2026 21:20:12',
-			building: 'Mariposa',
-			unit: '407',
-			description: 'Broken fob key',
-			action: 'Delivered new fob',
-			status: 'Complete'
-		}
-	];
+	type IssueRecord = PageData['issues'] extends Array<infer Issue> ? Issue : never;
+
+	function formatIssueTimestamp(value: string | null): string {
+		if (!value) return '';
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) return value;
+		return formatTimestamp(parsed);
+	}
+
+	function mapIssuesToEntries(issues: IssueRecord[]): TableEntry[] {
+		return issues.map((issue) => ({
+			time: formatIssueTimestamp(issue.reported_at ?? null),
+			building: issue.building ?? '',
+			unit: issue.unit ?? '',
+			description: issue.description ?? '',
+			action: issue.action ?? '',
+			status: (issue.status as TableEntry['status']) ?? 'Pending',
+			isDraft: issue.is_draft ?? false
+		}));
+	}
+
+	const initialEntries: TableEntry[] = mapIssuesToEntries(data.issues ?? []);
 
 const mariposaRecords: TenantRecord[] = [
 		{
