@@ -1,4 +1,4 @@
-export type IssueStatus = 'Pending' | 'In Progress' | 'Complete';
+export type IssueStatus = 'Approval' | 'Review' | 'Pending' | 'In Progress' | 'Complete';
 
 export interface IssueRow {
 	id: string;

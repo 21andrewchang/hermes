@@ -9,7 +9,7 @@ import { supabase } from '$lib/supabase';
 import type { IssueRow, IssueStatus } from '$lib/types/issues';
 
 const MODEL = 'gpt-4o-mini';
-const ISSUE_STATUSES: IssueStatus[] = ['Pending', 'In Progress', 'Complete'];
+const ISSUE_STATUSES: IssueStatus[] = ['Approval', 'Review', 'Pending', 'In Progress', 'Complete'];
 
 const SYSTEM_PROMPT = `You are Hermes, a property operations copilot. You read pasted tenant emails or SMS transcripts and help
 humans track work. Every conversation must end with actionable next steps. When you have enough data

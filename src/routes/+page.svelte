@@ -44,12 +44,18 @@
 		unit: string;
 		description: string;
 		action: string;
-		status: 'Pending' | 'In Progress' | 'Complete';
+		status: 'Approval' | 'Review' | 'Pending' | 'In Progress' | 'Complete';
 		isDraft?: boolean;
 		unitFilter?: string;
 	}
 
-	const statusOptions: TableEntry['status'][] = ['Pending', 'In Progress', 'Complete'];
+	const statusOptions: TableEntry['status'][] = [
+		'Approval',
+		'Review',
+		'Pending',
+		'In Progress',
+		'Complete'
+	];
 	const buildingOptions = tabs.filter((tab) => tab.id !== 'inbox');
 	interface TenantRecord {
 		unit: string;
@@ -385,9 +391,11 @@ const mariposaRecords: TenantRecord[] = [
 	}
 
 const statusRank: Record<TableEntry['status'], number> = {
-	Pending: 0,
-	'In Progress': 1,
-	Complete: 2
+	Approval: 0,
+	Review: 1,
+	Pending: 2,
+	'In Progress': 3,
+	Complete: 4
 };
 
 	const willoughbyRecords: TenantRecord[] = [
@@ -842,13 +850,35 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 		persistEntryById(targetId);
 	}
 
+	function approveFromApproval(index: number) {
+		const targetId = entries[index]?.id;
+		const updated = entries.map((entry, entryIndex): TableEntry =>
+			entryIndex === index ? { ...entry, status: 'Pending' } : entry
+		);
+		entries = sortEntries(updated);
+		persistEntryById(targetId);
+	}
+
+	function moveToReview(index: number) {
+		const targetId = entries[index]?.id;
+		const updated = entries.map((entry, entryIndex): TableEntry =>
+			entryIndex === index ? { ...entry, status: 'Review' } : entry
+		);
+		entries = sortEntries(updated);
+		persistEntryById(targetId);
+	}
+
 	function statusStyles(status: TableEntry['status']): string {
+		if (status === 'Approval') return 'bg-purple-100 text-purple-800';
+		if (status === 'Review') return 'bg-rose-100 text-rose-800';
 		if (status === 'Pending') return 'bg-amber-100 text-amber-800';
 		if (status === 'In Progress') return 'bg-blue-100 text-blue-800';
 		return 'bg-emerald-100 text-emerald-800';
 	}
 
 	function statusDotStyles(status: TableEntry['status']): string {
+		if (status === 'Approval') return 'bg-purple-500';
+		if (status === 'Review') return 'bg-rose-500';
 		if (status === 'Pending') return 'bg-amber-500';
 		if (status === 'In Progress') return 'bg-blue-500';
 		return 'bg-emerald-500';
@@ -1148,52 +1178,101 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 												onblur={() => handleFieldBlur(index)}
 											/>
 										</div>
-										<div class="relative pl-1 py-2 items-center">
-											<button
-												class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyles(entry.status)}`}
-												onclick={(event) => {
-													event.stopPropagation();
-													toggleStatusMenu(index);
-												}}
-											>
-												<span
-													class={`h-2 w-2 rounded-full ${statusDotStyles(entry.status)}`}
-													aria-hidden="true"
-												></span>
-												{entry.status}
-											</button>
-											{#if openStatusIndex === index}
-												<div
-													class="absolute top-full right-0 z-10 mt-2 w-44 rounded-md border border-stone-200 bg-white shadow-lg"
-												>
-													{#each statusOptions as option}
-														<button
-															class={`flex w-full items-center justify-between px-3 py-2 text-xs text-stone-700 hover:bg-stone-100 ${
-																option === entry.status ? 'font-semibold text-stone-900' : ''
-															}`}
-															onclick={(event) => {
-																event.stopPropagation();
-																updateStatus(index, option);
-																openStatusIndex = null;
-															}}
+										<div class="relative pl-1 py-2 items-center pr-1">
+											{#if entry.status === 'Approval'}
+												<div class="flex items-center justify-center gap-2">
+													<button
+														class="flex items-center pl-1 gap-1 rounded-md border border-stone-900 bg-stone-900 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-900"
+														onclick={(event) => {
+															event.stopPropagation();
+															approveFromApproval(index);
+														}}
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="16"
+															height="16"
+															fill="currentColor"
+															viewBox="0 0 16 16"
 														>
-															<span>{option}</span>
-															{#if option === entry.status}
-																<svg
-																	xmlns="http://www.w3.org/2000/svg"
-																	width="12"
-																	height="12"
-																	fill="currentColor"
-																	viewBox="0 0 16 16"
-																>
-																	<path
-																		d="M13.485 1.929a.75.75 0 0 1 0 1.06L6.486 9.99a.75.75 0 0 1-1.06 0L2.515 7.08a.75.75 0 0 1 1.06-1.06L6 8.445l6.425-6.515a.75.75 0 0 1 1.06 0"
-																	/>
-																</svg>
-															{/if}
-														</button>
-													{/each}
+															<path
+																class="text-emerald-500"
+																fill="currentColor"
+																d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"
+															/>
+														</svg>
+														Yes
+													</button>
+													<button
+														class="flex items-center gap-1 rounded-md border border-stone-900 bg-stone-900 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-900"
+														onclick={(event) => {
+															event.stopPropagation();
+															moveToReview(index);
+														}}
+													>
+														<svg
+															xmlns="http://www.w3.org/2000/svg"
+															width="16"
+															height="16"
+															fill="currentColor"
+															viewBox="0 0 16 16"
+														>
+															<path
+																class="text-rose-500"
+																fill="currentColor"
+																d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 0 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06"
+															/>
+														</svg>
+														No
+													</button>
 												</div>
+											{:else}
+												<button
+													class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyles(entry.status)}`}
+													onclick={(event) => {
+														event.stopPropagation();
+														toggleStatusMenu(index);
+													}}
+												>
+													<span
+														class={`h-2 w-2 rounded-full ${statusDotStyles(entry.status)}`}
+														aria-hidden="true"
+													></span>
+													{entry.status}
+												</button>
+												{#if openStatusIndex === index}
+													<div
+														class="absolute top-full right-0 z-10 mt-2 w-44 rounded-md border border-stone-200 bg-white shadow-lg"
+													>
+														{#each statusOptions as option}
+															<button
+																class={`flex w-full items-center justify-between px-3 py-2 text-xs text-stone-700 hover:bg-stone-100 ${
+																	option === entry.status ? 'font-semibold text-stone-900' : ''
+																}`}
+																onclick={(event) => {
+																	event.stopPropagation();
+																	updateStatus(index, option);
+																	openStatusIndex = null;
+																}}
+															>
+																<span>{option}</span>
+																{#if option === entry.status}
+																	<svg
+																		xmlns="http://www.w3.org/2000/svg"
+																		width="12"
+																		height="12"
+																		fill="currentColor"
+																		viewBox="0 0 16 16"
+																	>
+																		<path
+																			d="M13.485 1.929a.75.75 0 0 1 0 1.06L6.486 9.99a.75.75 0 0 1-1.06 0L2.515 7.08a.75.75 0 0 1 1.06-1.06L6 8.445l6.425-6.515a.75.75 0 0 1 1.06 0"
+																		/>
+																	</svg>
+																{/if}
+															</button>
+														{/each}
+													</div>
+												{/if}
 											{/if}
 										</div>
 									</div>
