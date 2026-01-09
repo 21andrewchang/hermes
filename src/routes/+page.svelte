@@ -722,16 +722,20 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 	return tab !== 'inbox';
 }
 
-	let conversation = $state<ChatMessage[]>([
-		{
-			id: 'welcome',
-			role: 'assistant',
-			content: 'Paste an email or SMS and I will summarize it and create an issue for you.'
-		}
-	]);
+	let conversation = $state<ChatMessage[]>(
+		(props.data.chatMessages ?? []).length > 0
+			? props.data.chatMessages
+			: [
+					{
+						id: 'welcome',
+						role: 'assistant',
+						content: 'Paste an email or SMS and I will summarize it and create an issue for you.'
+					}
+				]
+	);
 
 	let chatInput = $state('');
-	let chatSessionId = $state<string | null>(null);
+	let chatSessionId = $state<string | null>(props.data.chatSessionId ?? null);
 	let isSendingMessage = $state(false);
 	let chatError = $state<string | null>(null);
 
@@ -905,7 +909,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 			unit: '',
 			description: '',
 			action: '',
-			status: 'Pending',
+			status: 'Approval',
 			isDraft: true
 		};
 		entries = sortEntries([...entries, draftEntry]);
