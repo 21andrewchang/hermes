@@ -44,13 +44,12 @@
 		unit: string;
 		description: string;
 		action: string;
-		status: 'Approval' | 'Review' | 'Pending' | 'In Progress' | 'Complete';
+		status: 'Needs Approval' | 'Review' | 'Pending' | 'In Progress' | 'Complete';
 		isDraft?: boolean;
 		unitFilter?: string;
 	}
 
 	const statusOptions: TableEntry['status'][] = [
-		'Approval',
 		'Review',
 		'Pending',
 		'In Progress',
@@ -188,7 +187,7 @@ const buildingUnitMap: Record<BuildingTab, string[]> = {
 			unit: issue.unit ?? '',
 			description: issue.description ?? '',
 			action: issue.action ?? '',
-			status: issue.status ?? 'Approval',
+			status: issue.status ?? 'Needs Approval',
 			isDraft: issue.is_draft ?? false
 		};
 	}
@@ -212,7 +211,7 @@ const buildingUnitMap: Record<BuildingTab, string[]> = {
 	}
 
 const statusRank: Record<TableEntry['status'], number> = {
-	Approval: 0,
+	'Needs Approval': 0,
 	Review: 1,
 	Pending: 2,
 	'In Progress': 3,
@@ -297,6 +296,43 @@ function hasIncompleteDraft(): boolean {
 let openStatusIndex = $state<number | null>(null);
 let openBuildingIndex = $state<number | null>(null);
 let openUnitIndex = $state<number | null>(null);
+let selectedIds = $state<Set<string>>(new Set());
+
+function toggleSelection(id: string) {
+	const newSet = new Set(selectedIds);
+	if (newSet.has(id)) {
+		newSet.delete(id);
+	} else {
+		newSet.add(id);
+	}
+	selectedIds = newSet;
+}
+
+function toggleSelectAll() {
+	if (selectedIds.size === entries.length) {
+		selectedIds = new Set();
+	} else {
+		selectedIds = new Set(entries.map((e) => e.id));
+	}
+}
+
+async function deleteSelected() {
+	if (selectedIds.size === 0) return;
+
+	const idsToDelete = Array.from(selectedIds);
+	const { error } = await supabase
+		.from('issues')
+		.delete()
+		.in('id', idsToDelete);
+
+	if (error) {
+		console.error('Failed to delete issues:', error);
+		return;
+	}
+
+	entries = entries.filter((entry) => !selectedIds.has(entry.id));
+	selectedIds = new Set();
+}
 function isBuildingTab(tab: Tab): tab is BuildingTab {
 	return tab !== 'inbox';
 }
@@ -421,26 +457,9 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 		persistEntryById(targetId);
 	}
 
-	function approveFromApproval(index: number) {
-		const targetId = entries[index]?.id;
-		const updated = entries.map((entry, entryIndex): TableEntry =>
-			entryIndex === index ? { ...entry, status: 'Pending' } : entry
-		);
-		entries = sortEntries(updated);
-		persistEntryById(targetId);
-	}
-
-	function moveToReview(index: number) {
-		const targetId = entries[index]?.id;
-		const updated = entries.map((entry, entryIndex): TableEntry =>
-			entryIndex === index ? { ...entry, status: 'Review' } : entry
-		);
-		entries = sortEntries(updated);
-		persistEntryById(targetId);
-	}
 
 	function statusStyles(status: TableEntry['status']): string {
-		if (status === 'Approval') return 'bg-purple-100 text-purple-800';
+		if (status === 'Needs Approval') return 'bg-purple-100 text-purple-800';
 		if (status === 'Review') return 'bg-rose-100 text-rose-800';
 		if (status === 'Pending') return 'bg-amber-100 text-amber-800';
 		if (status === 'In Progress') return 'bg-blue-100 text-blue-800';
@@ -448,7 +467,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 	}
 
 	function statusDotStyles(status: TableEntry['status']): string {
-		if (status === 'Approval') return 'bg-purple-500';
+		if (status === 'Needs Approval') return 'bg-purple-500';
 		if (status === 'Review') return 'bg-rose-500';
 		if (status === 'Pending') return 'bg-amber-500';
 		if (status === 'In Progress') return 'bg-blue-500';
@@ -476,7 +495,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 			unit: '',
 			description: '',
 			action: '',
-			status: 'Approval',
+			status: 'Needs Approval',
 			isDraft: true
 		};
 		entries = sortEntries([...entries, draftEntry]);
@@ -582,19 +601,38 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 								proceed.
 							</p>
 						</div>
-						<button
-							type="button"
-							class="flex items-center gap-2 rounded-md bg-stone-800 px-2 py-1 text-xs text-stone-50 transition"
-							onclick={addNewIssue}
-						>
-							New issue
-						</button>
+						<div class="flex items-center gap-2">
+							{#if selectedIds.size > 0}
+								<button
+									type="button"
+									class="flex items-center gap-2 rounded-md bg-red-600 px-2 py-1 text-xs text-white transition hover:bg-red-700"
+									onclick={deleteSelected}
+								>
+									Delete ({selectedIds.size})
+								</button>
+							{/if}
+							<button
+								type="button"
+								class="flex items-center gap-2 rounded-md bg-stone-800 px-2 py-1 text-xs text-stone-50 transition"
+								onclick={addNewIssue}
+							>
+								New issue
+							</button>
+						</div>
 					</div>
 
 					<div class="flex-1 overflow-hidden rounded-lg border border-stone-200">
 						<div
-							class="pl-2 grid grid-cols-[100px_0.9fr_0.75fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+							class="grid grid-cols-[40px_100px_0.9fr_0.75fr_2fr_1.4fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
 						>
+							<div class="flex items-center justify-center py-2">
+								<input
+									type="checkbox"
+									class="h-4 w-4 rounded border-stone-300 text-stone-800 focus:ring-stone-500"
+									checked={selectedIds.size === entries.length && entries.length > 0}
+									onchange={toggleSelectAll}
+								/>
+							</div>
 							<div class="py-2 text-left">Time</div>
 							<div class="py-2">Building</div>
 							<div class="py-2">Unit</div>
@@ -604,11 +642,11 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 						</div>
 						<div class="relative">
 							<div
-								class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[100px_0.9fr_0.75fr_2fr_1.4fr_1fr]"
+								class="pointer-events-none absolute inset-0 z-0 grid grid-cols-[40px_100px_0.9fr_0.75fr_2fr_1.4fr_1fr]"
 							>
-								{#each Array(6) as _, index}
+								{#each Array(7) as _, index}
 									<div
-										class={`border-r border-stone-200 ${index === 5 ? 'border-r-0' : ''}`}
+										class={`border-r border-stone-200 ${index === 6 ? 'border-r-0' : ''}`}
 										aria-hidden="true"
 									></div>
 								{/each}
@@ -616,8 +654,16 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 							<div class="relative">
 								{#each entries as entry, index (index)}
 									<div
-										class="grid grid-cols-[100px_0.9fr_0.75fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
+										class="grid grid-cols-[40px_100px_0.9fr_0.75fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
 									>
+										<div class="flex items-center justify-center py-2">
+											<input
+												type="checkbox"
+												class="h-4 w-4 rounded border-stone-300 text-stone-800 focus:ring-stone-500"
+												checked={selectedIds.has(entry.id)}
+												onchange={() => toggleSelection(entry.id)}
+											/>
+										</div>
 										<div class="flex items-center px-2 py-2 font-mono text-xs text-stone-500">
 											{entry.time}
 										</div>
@@ -750,51 +796,16 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 											/>
 										</div>
 										<div class="relative flex min-h-[44px] items-center justify-start px-1">
-											{#if entry.status === 'Approval'}
-												<div class="flex w-full items-center justify-start gap-2">
-													<button
-														class="flex w-full items-center justify-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
-														onclick={(event) => {
-															event.stopPropagation();
-															approveFromApproval(index);
-														}}
-													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="16"
-															height="16"
-															fill="currentColor"
-															viewBox="0 0 16 16"
-														>
-															<path
-																fill="#34d399"
-																d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"
-															/>
-														</svg>
-														Yes
-													</button>
-													<button
-														class="flex w-full items-center justify-center gap-1 rounded-full border border-stone-800 bg-stone-800 px-2 py-1 text-xs font-medium text-stone-100 transition hover:bg-stone-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-stone-800"
-														onclick={(event) => {
-															event.stopPropagation();
-															moveToReview(index);
-														}}
-													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															width="16"
-															height="16"
-															fill="currentColor"
-															viewBox="0 0 16 16"
-														>
-															<path
-																fill="#f87171"
-																d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 0 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06"
-															/>
-														</svg>
-														No
-													</button>
-												</div>
+											{#if entry.status === 'Needs Approval'}
+												<span
+													class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyles(entry.status)}`}
+												>
+													<span
+														class={`h-2 w-2 rounded-full ${statusDotStyles(entry.status)}`}
+														aria-hidden="true"
+													></span>
+													{entry.status}
+												</span>
 											{:else}
 												<button
 													class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${statusStyles(entry.status)}`}

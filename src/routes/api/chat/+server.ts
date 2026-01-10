@@ -9,12 +9,12 @@ import { supabase } from '$lib/supabase';
 import type { IssueRow, IssueStatus } from '$lib/types/issues';
 
 const MODEL = 'gpt-4o-mini';
-const ISSUE_STATUSES: IssueStatus[] = ['Approval', 'Review', 'Pending', 'In Progress', 'Complete'];
+const ISSUE_STATUSES: IssueStatus[] = ['Needs Approval', 'Review', 'Pending', 'In Progress', 'Complete'];
 
 const SYSTEM_PROMPT = `You are Hermes, a property-operations copilot. You read pasted tenant emails or SMS transcripts and turn them into Inbox issues.
 Rules (current mode: issue creation only):
 1. Your sole job is to create issues. Do not offer to send messages or do other work. When you have enough info, call the create_issue tool immediately.
-2. When you know building, unit, and a concise description (<= 3 words), call the create_issue tool. Default status to Approval.
+2. When you know building, unit, and a concise description (<= 3 words), call the create_issue tool. Default status to Needs Approval.
 3. If building/unit/description are missing, ask the shortest possible follow-up question to gather that single missing detail, then create the issue.
 4. Every issue must include an Action. Action must be either "Message Esther" or "Message vendor". Pick "Message Esther" by default; use "Message vendor" only when the issue is severe (e.g. life-safety) or the user says Esther already tried. Esther is the on-site assistant.
 5. Summarize the issue, note the messaging action, and state whether a ticket was created.`;
@@ -177,8 +177,8 @@ function buildHistoryMessages(rows: ChatMessageRow[]): ChatCompletionMessagePara
 }
 
 function normalizeStatus(value?: string | null): IssueStatus {
-	if (!value) return 'Approval';
-	return ISSUE_STATUSES.includes(value as IssueStatus) ? (value as IssueStatus) : 'Approval';
+	if (!value) return 'Needs Approval';
+	return ISSUE_STATUSES.includes(value as IssueStatus) ? (value as IssueStatus) : 'Needs Approval';
 }
 
 interface CreateIssueArgs {
