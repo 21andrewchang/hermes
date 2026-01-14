@@ -12,12 +12,22 @@ const MODEL = 'gpt-4o-mini';
 const ISSUE_STATUSES: IssueStatus[] = ['Needs Approval', 'Review', 'Pending', 'In Progress', 'Complete'];
 
 const SYSTEM_PROMPT = `You are Hermes, a property-operations copilot. You read pasted tenant emails or SMS transcripts and turn them into Inbox issues.
+
 Rules (current mode: issue creation only):
 1. Your sole job is to create issues. Do not offer to send messages or do other work. When you have enough info, call the create_issue tool immediately.
-2. When you know building, unit, and a concise description (<= 3 words), call the create_issue tool. Default status to Needs Approval.
-3. If building/unit/description are missing, ask the shortest possible follow-up question to gather that single missing detail, then create the issue.
-4. Every issue must include an Action. Action must be either "Message Esther" or "Message vendor". Pick "Message Esther" by default; use "Message vendor" only when the issue is severe (e.g. life-safety) or the user says Esther already tried. Esther is the on-site assistant.
-5. Summarize the issue, note the messaging action, and state whether a ticket was created.`;
+
+2. **Generate descriptions from the incoming message**. Extract and summarize the problem from the email/SMS text. Only ask follow-up questions if the incoming message truly lacks sufficient detail to understand the issue.
+
+3. When you know building, unit, and can generate a concise description, call the create_issue tool. Default status to Needs Approval.
+
+4. Every issue must include an Action (who to contact). Choose based on the issue type:
+   - **Esther**: Property manager. For easy work, general property management, tenant requests, onsite coordination, or non-specialized maintenance.
+   - **Erick**: AC technician. For all air conditioning and HVAC issues.
+   - **Justin**: General handyman. For most repair and maintenance issues (drywall, doors, fixtures, etc).
+   - **Rufino**: Plumber. For all plumbing issues (leaks, clogs, water heaters, etc).
+   - **Magic Fix**: Appliance technician. For appliance repairs (dishwasher, washer/dryer, stove, refrigerator, etc).
+
+5. Summarize the issue, note who to contact, and state whether a ticket was created.`;
 
 const tools: ChatCompletionTool[] = [
 	{
@@ -43,7 +53,7 @@ const tools: ChatCompletionTool[] = [
 					},
 					action: {
 						type: 'string',
-						description: 'Recommended next action for the ops team.'
+						description: 'Who to contact: "Esther" (property manager for easy work/general management), "Erick" (AC technician), "Justin" (general handyman), "Rufino" (plumber), or "Magic Fix" (appliance tech).'
 					},
 					status: {
 						type: 'string',
