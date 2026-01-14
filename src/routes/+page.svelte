@@ -653,6 +653,10 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 				upsertEntryFromIssue(result.issue as IssueRecord);
 			}
 
+			if (result.updatedIssue) {
+				upsertEntryFromIssue(result.updatedIssue as IssueRecord);
+			}
+
 			const assistantMessage: ChatMessage = {
 				id: (result.messageId as string | undefined) ?? createEntryId(),
 				role: 'assistant',

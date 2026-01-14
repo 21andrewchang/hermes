@@ -11,29 +11,39 @@ import type { IssueRow, IssueStatus } from '$lib/types/issues';
 const MODEL = 'gpt-4o-mini';
 const ISSUE_STATUSES: IssueStatus[] = ['Needs Approval', 'Review', 'Pending', 'In Progress', 'Complete'];
 
-const SYSTEM_PROMPT = `You are Hermes, a property-operations copilot. You read pasted tenant emails or SMS transcripts and turn them into Inbox issues.
+const BASE_SYSTEM_PROMPT = `You are Hermes, a property-operations copilot. You help with:
 
-Rules (current mode: issue creation only):
-1. Your sole job is to create issues. Do not offer to send messages or do other work. When you have enough info, call the create_issue tool immediately.
+1. **Create Issues**: Turn tenant emails/SMS into Inbox issues
+2. **Draft Messages**: Create or rewrite messages for existing issues
 
-2. **Generate descriptions from the incoming message**. Extract and summarize the problem from the email/SMS text. Only ask follow-up questions if the incoming message truly lacks sufficient detail to understand the issue.
+## Creating Issues
+When user pastes an email/SMS about a property issue:
+- Extract building, unit, and description from the text
+- Only ask follow-up questions if truly insufficient detail
+- Call create_issue with appropriate action (who to contact)
+- Generate a draft message to the contact person
 
-3. When you know building, unit, and can generate a concise description, call the create_issue tool. Default status to Needs Approval.
+**Contact options (choose based on issue type):**
+- **Esther**: Property manager. For easy work, general management, tenant requests, onsite coordination.
+- **Erick**: AC technician. For all air conditioning and HVAC issues.
+- **Justin**: General handyman. For repairs (drywall, doors, fixtures, etc).
+- **Rufino**: Plumber. For plumbing issues (leaks, clogs, water heaters, etc).
+- **Magic Fix**: Appliance technician. For appliance repairs (dishwasher, washer/dryer, stove, refrigerator, etc).
 
-4. Every issue must include an Action (who to contact). Choose based on the issue type:
-   - **Esther**: Property manager. For easy work, general property management, tenant requests, onsite coordination, or non-specialized maintenance.
-   - **Erick**: AC technician. For all air conditioning and HVAC issues.
-   - **Justin**: General handyman. For most repair and maintenance issues (drywall, doors, fixtures, etc).
-   - **Rufino**: Plumber. For all plumbing issues (leaks, clogs, water heaters, etc).
-   - **Magic Fix**: Appliance technician. For appliance repairs (dishwasher, washer/dryer, stove, refrigerator, etc).
+## Drafting Messages for Existing Issues
+When user asks to draft a message for an existing issue, use the draft_message tool:
 
-5. Generate a short draft message to the contact person. The message should:
-   - Be addressed to the contact (e.g., "Hi Esther,")
-   - Briefly explain the issue and what needs to be done
-   - Be 2-3 sentences max
-   - Be professional but friendly
+**By status:**
+- **Pending** (no draft): Create initial outreach to the assigned contact explaining the issue
+- **Review** (has draft): Rewrite/improve the existing draft based on feedback
+- **In Progress**: Draft follow-up asking about progress, ETA, or blockers
+- **Complete**: Draft invoice request or thank you message
 
-6. Summarize the issue, note who to contact, and state whether a ticket was created.`;
+**Guidelines for all messages:**
+- 2-4 sentences, professional but friendly
+- Address the recipient by name (e.g., "Hi Erick,")
+- Reference the specific issue (building, unit, problem)
+- Match tone to status: urgent for new issues, polite for follow-ups`;
 
 const tools: ChatCompletionTool[] = [
 	{
@@ -76,6 +86,38 @@ const tools: ChatCompletionTool[] = [
 					}
 				},
 				required: ['building', 'unit', 'description']
+			}
+		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'draft_message',
+			description:
+				'Draft or rewrite a message for an existing issue. Use for initial outreach (Pending), rewrites (Review), follow-ups (In Progress), or invoice requests (Complete).',
+			parameters: {
+				type: 'object',
+				properties: {
+					issue_id: {
+						type: 'string',
+						description: 'The ID of the issue (from the recent issues list)'
+					},
+					message_type: {
+						type: 'string',
+						enum: ['initial_outreach', 'rewrite', 'follow_up', 'invoice_request'],
+						description:
+							'Type of message: initial_outreach (Pending - no draft yet), rewrite (Review - fix existing draft), follow_up (In Progress - check on status), invoice_request (Complete - ask for invoice)'
+					},
+					recipient: {
+						type: 'string',
+						description: 'Who the message is for (e.g., Esther, Erick, Justin, Rufino, Magic Fix)'
+					},
+					draft_content: {
+						type: 'string',
+						description: 'The drafted message (2-4 sentences, professional but friendly)'
+					}
+				},
+				required: ['issue_id', 'message_type', 'draft_content']
 			}
 		}
 	}
@@ -246,6 +288,55 @@ async function createIssueFromArgs(args: CreateIssueArgs): Promise<ToolCallResul
 	};
 }
 
+interface DraftMessageArgs {
+	issue_id?: string;
+	message_type?: 'initial_outreach' | 'rewrite' | 'follow_up' | 'invoice_request';
+	recipient?: string;
+	draft_content?: string;
+}
+
+async function handleDraftMessage(args: DraftMessageArgs): Promise<ToolCallResult> {
+	const issueId = args.issue_id?.trim();
+	const draftContent = args.draft_content?.trim();
+
+	if (!issueId) {
+		return { success: false, error: 'Missing issue_id' };
+	}
+	if (!draftContent) {
+		return { success: false, error: 'Missing draft_content' };
+	}
+
+	const { data, error } = await supabase
+		.from('issues')
+		.update({ draft: draftContent })
+		.eq('id', issueId)
+		.select('id, reported_at, building, unit, description, action, status, is_draft, draft')
+		.single();
+
+	if (error || !data) {
+		return { success: false, error: error?.message ?? 'Failed to update draft' };
+	}
+
+	return { success: true, issue: data as IssueRow };
+}
+
+async function fetchRecentIssues(): Promise<string> {
+	const { data: recentIssues } = await supabase
+		.from('issues')
+		.select('id, building, unit, description, action, status, draft')
+		.order('reported_at', { ascending: false })
+		.limit(20);
+
+	if (!recentIssues?.length) return '';
+
+	const issueLines = recentIssues.map((i) => {
+		const draftStatus = i.draft ? 'has draft' : 'no draft';
+		return `- [${i.id.slice(0, 8)}] ${i.building} Unit ${i.unit}: "${i.description}" (Status: ${i.status}, Action: ${i.action}, ${draftStatus})`;
+	});
+
+	return `\n\n## Recent Issues\n${issueLines.join('\n')}`;
+}
+
 export const POST: RequestHandler = async ({ request }) => {
 	try {
 		const body = (await request.json()) as ChatRequestBody;
@@ -258,15 +349,20 @@ export const POST: RequestHandler = async ({ request }) => {
 		const userContent = normalizeUserContent(body.text, body.context);
 		await insertMessage(sessionId, 'user', userContent);
 
+		// Build dynamic system prompt with recent issues context
+		const issueContext = await fetchRecentIssues();
+		const systemPrompt = BASE_SYSTEM_PROMPT + issueContext;
+
 		const history = await fetchChatHistory(sessionId);
 		const messages: ChatCompletionMessageParam[] = [
-			{ role: 'system', content: SYSTEM_PROMPT },
+			{ role: 'system', content: systemPrompt },
 			...buildHistoryMessages(history)
 		];
 
 		let assistantMessage = await runChatCompletion(messages);
 		const toolCalls = assistantMessage.tool_calls ?? [];
 		let createdIssue: IssueRow | null = null;
+		let updatedIssue: IssueRow | null = null;
 
 		if (toolCalls.length > 0) {
 			messages.push({
@@ -277,18 +373,32 @@ export const POST: RequestHandler = async ({ request }) => {
 
 			for (const toolCall of toolCalls) {
 				if (toolCall.type !== 'function') continue;
-				if (toolCall.function.name !== 'create_issue') continue;
 
-				let parsedArgs: CreateIssueArgs = {};
+				const toolName = toolCall.function.name;
+				let parsedArgs: CreateIssueArgs | DraftMessageArgs = {};
 				try {
 					parsedArgs = JSON.parse(toolCall.function.arguments ?? '{}');
 				} catch (parseError) {
 					console.error('Failed to parse tool args', parseError);
 				}
 
-				const result = await createIssueFromArgs(parsedArgs);
-				if (result.success && result.issue) {
-					createdIssue = result.issue;
+				let result: ToolCallResult;
+
+				switch (toolName) {
+					case 'create_issue':
+						result = await createIssueFromArgs(parsedArgs as CreateIssueArgs);
+						if (result.success && result.issue) {
+							createdIssue = result.issue;
+						}
+						break;
+					case 'draft_message':
+						result = await handleDraftMessage(parsedArgs as DraftMessageArgs);
+						if (result.success && result.issue) {
+							updatedIssue = result.issue;
+						}
+						break;
+					default:
+						result = { success: false, error: `Unknown tool: ${toolName}` };
 				}
 
 				const toolContent = JSON.stringify(result);
@@ -311,19 +421,27 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 
 		const finalContent = assistantMessage.content?.trim() ?? 'Let me know how else I can help.';
+		const toolUsed = createdIssue ? 'create_issue' : updatedIssue ? 'draft_message' : null;
+		const toolArgs = createdIssue
+			? JSON.stringify({ issueId: createdIssue.id })
+			: updatedIssue
+				? JSON.stringify({ issueId: updatedIssue.id })
+				: null;
+
 		const assistantMessageId = await insertMessage(
 			sessionId,
 			'assistant',
 			finalContent,
-			createdIssue ? 'create_issue' : null,
-			createdIssue ? JSON.stringify({ issueId: createdIssue.id }) : null
+			toolUsed,
+			toolArgs
 		);
 
 		return json({
 			sessionId,
 			messageId: assistantMessageId,
 			message: finalContent,
-			issue: createdIssue
+			issue: createdIssue,
+			updatedIssue: updatedIssue
 		});
 	} catch (error) {
 		console.error('Chat handler failed', error);
