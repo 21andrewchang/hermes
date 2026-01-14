@@ -2,9 +2,11 @@
 	import type { PageData } from './$types';
 	import { supabase } from '$lib/supabase';
 	import type { IssueRow } from '$lib/types/issues';
+	import type { InvoiceRow, InvoiceStatus } from '$lib/types/invoices';
 
 	type Tab =
 		| 'inbox'
+		| 'payables'
 		| 'mariposa'
 		| 'willoughby'
 		| 'stanford'
@@ -12,10 +14,11 @@
 		| 'pickford'
 		| '18th'
 		| '17th';
-	type BuildingTab = Exclude<Tab, 'inbox'>;
+	type BuildingTab = Exclude<Tab, 'inbox' | 'payables'>;
 
 	const tabs: { id: Tab; label: string }[] = [
 		{ id: 'inbox', label: 'Inbox' },
+		{ id: 'payables', label: 'Payables' },
 		{ id: 'mariposa', label: 'Mariposa' },
 		{ id: 'willoughby', label: 'Willoughby' },
 		{ id: 'stanford', label: 'Stanford' },
@@ -55,7 +58,8 @@
 		'In Progress',
 		'Complete'
 	];
-	const buildingOptions = tabs.filter((tab) => tab.id !== 'inbox');
+	const invoiceStatusOptions: InvoiceStatus[] = ['Pending', 'Approved', 'Paid'];
+	const buildingOptions = tabs.filter((tab) => tab.id !== 'inbox' && tab.id !== 'payables');
 
 	interface BuildingProfile {
 		name: string;
@@ -333,8 +337,106 @@ async function deleteSelected() {
 	entries = entries.filter((entry) => !selectedIds.has(entry.id));
 	selectedIds = new Set();
 }
+
+// Invoice state and functions
+let invoices = $state<InvoiceRow[]>(props.data.invoices ?? []);
+let showUploadModal = $state(false);
+let isUploading = $state(false);
+let uploadError = $state<string | null>(null);
+let openInvoiceStatusIndex = $state<number | null>(null);
+
+function formatInvoiceDate(dateStr: string | null): string {
+	if (!dateStr) return '';
+	const date = new Date(dateStr);
+	if (isNaN(date.getTime())) return dateStr;
+	const month = date.getMonth() + 1;
+	const day = date.getDate();
+	return `${month}/${day}`;
+}
+
+function formatAmount(amount: number | null): string {
+	if (amount === null) return '—';
+	return `$${amount.toFixed(2)}`;
+}
+
+function invoiceStatusStyles(status: InvoiceStatus): string {
+	if (status === 'Pending') return 'bg-amber-100 text-amber-800';
+	if (status === 'Approved') return 'bg-blue-100 text-blue-800';
+	return 'bg-emerald-100 text-emerald-800';
+}
+
+function invoiceStatusDotStyles(status: InvoiceStatus): string {
+	if (status === 'Pending') return 'bg-amber-500';
+	if (status === 'Approved') return 'bg-blue-500';
+	return 'bg-emerald-500';
+}
+
+function getLinkedIssueDescription(issueId: string | null): string {
+	if (!issueId) return '—';
+	const issue = entries.find((e) => e.id === issueId);
+	return issue?.description || '—';
+}
+
+async function handleFileUpload(event: Event) {
+	const input = event.target as HTMLInputElement;
+	const file = input.files?.[0];
+	if (!file) return;
+
+	if (file.type !== 'application/pdf') {
+		uploadError = 'Only PDF files are allowed';
+		return;
+	}
+
+	isUploading = true;
+	uploadError = null;
+
+	try {
+		const formData = new FormData();
+		formData.append('file', file);
+
+		const response = await fetch('/api/invoices', {
+			method: 'POST',
+			body: formData
+		});
+
+		const result = await response.json();
+		if (!response.ok) {
+			throw new Error(result.error ?? 'Upload failed');
+		}
+
+		invoices = [result.invoice, ...invoices];
+		showUploadModal = false;
+		input.value = '';
+	} catch (error) {
+		console.error('Upload failed:', error);
+		uploadError = error instanceof Error ? error.message : 'Upload failed';
+	} finally {
+		isUploading = false;
+	}
+}
+
+async function updateInvoiceStatus(invoiceId: string, status: InvoiceStatus) {
+	const response = await fetch('/api/invoices', {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ id: invoiceId, status })
+	});
+
+	if (response.ok) {
+		const result = await response.json();
+		invoices = invoices.map((inv) =>
+			inv.id === invoiceId ? result.invoice : inv
+		);
+	}
+	openInvoiceStatusIndex = null;
+}
+
+function toggleInvoiceStatusMenu(index: number) {
+	openInvoiceStatusIndex = openInvoiceStatusIndex === index ? null : index;
+}
+
 function isBuildingTab(tab: Tab): tab is BuildingTab {
-	return tab !== 'inbox';
+	return tab !== 'inbox' && tab !== 'payables';
 }
 
 	let conversation = $state<ChatMessage[]>(
@@ -561,6 +663,7 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 			function handleClick() {
 				openStatusIndex = null;
 				openBuildingIndex = null;
+				openInvoiceStatusIndex = null;
 				closeUnitMenu();
 			}
 		window.addEventListener('click', handleClick);
@@ -861,6 +964,176 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 						</div>
 					</div>
 				</div>
+			{:else if activeTab === 'payables'}
+				<div class="flex h-full flex-col gap-6">
+					<div class="flex items-end justify-between">
+						<div>
+							<h1 class="text-3xl font-semibold text-stone-900">Payables</h1>
+							<p class="text-sm text-stone-500">
+								Upload and manage vendor invoices. Invoices are automatically matched to issues.
+							</p>
+						</div>
+						<button
+							type="button"
+							class="flex items-center gap-2 rounded-md bg-stone-800 px-2 py-1 text-xs text-stone-50 transition"
+							onclick={() => (showUploadModal = true)}
+						>
+							Upload Invoice
+						</button>
+					</div>
+
+					<div class="flex-1 overflow-hidden rounded-lg border border-stone-200">
+						<div
+							class="grid grid-cols-[80px_0.8fr_0.6fr_2fr_100px_1fr_1fr] border-b border-stone-200 bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase"
+						>
+							<div class="py-2 px-2 text-left">Date</div>
+							<div class="py-2">Building</div>
+							<div class="py-2">Unit</div>
+							<div class="py-2">Description</div>
+							<div class="py-2">Amount</div>
+							<div class="py-2">Linked Issue</div>
+							<div class="py-2">Status</div>
+						</div>
+						<div class="relative overflow-y-auto" style="max-height: calc(100vh - 280px);">
+							{#if invoices.length === 0}
+								<div class="flex flex-col items-center justify-center py-12 text-sm text-stone-500">
+									No invoices yet. Upload your first invoice to get started.
+								</div>
+							{:else}
+								{#each invoices as invoice, index}
+									<div
+										class="grid grid-cols-[80px_0.8fr_0.6fr_2fr_100px_1fr_1fr] border-b border-stone-200 text-sm text-stone-800"
+									>
+										<div class="flex items-center px-2 py-3 font-mono text-xs text-stone-500">
+											{formatInvoiceDate(invoice.uploaded_at)}
+										</div>
+										<div class="flex items-center px-2 py-3">
+											{#if invoice.processing_status === 'processing'}
+												<span class="text-stone-400 italic">Processing...</span>
+											{:else}
+												{invoice.building ?? '—'}
+											{/if}
+										</div>
+										<div class="flex items-center px-2 py-3">
+											{#if invoice.processing_status === 'processing'}
+												<span class="text-stone-400 italic">—</span>
+											{:else}
+												{invoice.unit ?? '—'}
+											{/if}
+										</div>
+										<div class="flex items-center px-2 py-3 text-stone-600">
+											{#if invoice.processing_status === 'processing'}
+												<span class="text-stone-400 italic">Extracting data...</span>
+											{:else if invoice.processing_status === 'failed'}
+												<span class="text-red-600">{invoice.error_message ?? 'Processing failed'}</span>
+											{:else}
+												{invoice.description ?? '—'}
+											{/if}
+										</div>
+										<div class="flex items-center px-2 py-3 font-mono">
+											{#if invoice.processing_status === 'completed'}
+												{formatAmount(invoice.amount)}
+											{:else}
+												<span class="text-stone-400">—</span>
+											{/if}
+										</div>
+										<div class="flex items-center px-2 py-3 text-xs text-stone-500 truncate">
+											{getLinkedIssueDescription(invoice.issue_id)}
+										</div>
+										<div class="relative flex items-center px-2 py-3">
+											<button
+												class={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${invoiceStatusStyles(invoice.status)}`}
+												onclick={(event) => {
+													event.stopPropagation();
+													toggleInvoiceStatusMenu(index);
+												}}
+											>
+												<span
+													class={`h-2 w-2 rounded-full ${invoiceStatusDotStyles(invoice.status)}`}
+													aria-hidden="true"
+												></span>
+												{invoice.status}
+											</button>
+											{#if openInvoiceStatusIndex === index}
+												<div
+													class="absolute top-full right-0 z-10 mt-2 w-36 rounded-md border border-stone-200 bg-white shadow-lg"
+												>
+													{#each invoiceStatusOptions as option}
+														<button
+															class={`flex w-full items-center justify-between px-3 py-2 text-xs text-stone-700 hover:bg-stone-100 ${
+																option === invoice.status ? 'font-semibold text-stone-900' : ''
+															}`}
+															onclick={(event) => {
+																event.stopPropagation();
+																updateInvoiceStatus(invoice.id, option);
+															}}
+														>
+															<span>{option}</span>
+															{#if option === invoice.status}
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	width="12"
+																	height="12"
+																	fill="currentColor"
+																	viewBox="0 0 16 16"
+																>
+																	<path
+																		d="M13.485 1.929a.75.75 0 0 1 0 1.06L6.486 9.99a.75.75 0 0 1-1.06 0L2.515 7.08a.75.75 0 0 1 1.06-1.06L6 8.445l6.425-6.515a.75.75 0 0 1 1.06 0"
+																	/>
+																</svg>
+															{/if}
+														</button>
+													{/each}
+												</div>
+											{/if}
+										</div>
+									</div>
+								{/each}
+							{/if}
+						</div>
+					</div>
+				</div>
+
+				<!-- Upload Modal -->
+				{#if showUploadModal}
+					<div
+						class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+						onclick={() => (showUploadModal = false)}
+					>
+						<div
+							class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+							onclick={(e) => e.stopPropagation()}
+						>
+							<h2 class="text-lg font-semibold text-stone-900 mb-4">Upload Invoice</h2>
+							<p class="text-sm text-stone-500 mb-4">
+								Select a PDF invoice to upload. The invoice will be processed automatically to extract details.
+							</p>
+							<input
+								type="file"
+								accept="application/pdf"
+								class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm file:mr-4 file:rounded-md file:border-0 file:bg-stone-800 file:px-4 file:py-2 file:text-xs file:text-white"
+								onchange={handleFileUpload}
+								disabled={isUploading}
+							/>
+							{#if uploadError}
+								<p class="mt-2 text-xs text-red-600">{uploadError}</p>
+							{/if}
+							{#if isUploading}
+								<p class="mt-2 text-xs text-stone-500">Uploading...</p>
+							{/if}
+							<div class="mt-4 flex justify-end gap-2">
+								<button
+									type="button"
+									class="rounded-md px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100"
+									onclick={() => (showUploadModal = false)}
+									disabled={isUploading}
+								>
+									Cancel
+								</button>
+							</div>
+						</div>
+					</div>
+				{/if}
 			{:else if isBuildingTab(activeTab)}
 				{@const profile = buildingProfiles[activeTab]}
 				<div class="flex h-full flex-col gap-6">

@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { supabase } from '$lib/supabase';
 import type { IssueRow } from '$lib/types/issues';
+import type { InvoiceRow } from '$lib/types/invoices';
 
 interface ChatMessage {
 	id: string;
@@ -11,6 +12,7 @@ interface ChatMessage {
 
 interface LoadData {
 	issues: IssueRow[];
+	invoices: InvoiceRow[];
 	chatSessionId: string | null;
 	chatMessages: ChatMessage[];
 }
@@ -48,6 +50,11 @@ export const load: PageServerLoad<LoadData> = async () => {
 		.select('id, reported_at, building, unit, description, action, status, is_draft')
 		.order('reported_at', { ascending: false });
 
+	const invoicesPromise = supabase
+		.from('invoices')
+		.select('*')
+		.order('uploaded_at', { ascending: false });
+
 	const sessionId = await getOrCreateSession();
 
 	const messagesPromise = supabase
@@ -57,11 +64,18 @@ export const load: PageServerLoad<LoadData> = async () => {
 		.in('role', ['user', 'assistant'])
 		.order('created_at', { ascending: true });
 
-	const [{ data: issues, error: issuesError }, { data: messages, error: messagesError }] =
-		await Promise.all([issuesPromise, messagesPromise]);
+	const [
+		{ data: issues, error: issuesError },
+		{ data: invoices, error: invoicesError },
+		{ data: messages, error: messagesError }
+	] = await Promise.all([issuesPromise, invoicesPromise, messagesPromise]);
 
 	if (issuesError) {
 		console.error('Failed to load issues from Supabase:', issuesError);
+	}
+
+	if (invoicesError) {
+		console.error('Failed to load invoices from Supabase:', invoicesError);
 	}
 
 	if (messagesError) {
@@ -70,6 +84,7 @@ export const load: PageServerLoad<LoadData> = async () => {
 
 	return {
 		issues: issues ?? [],
+		invoices: (invoices ?? []) as InvoiceRow[],
 		chatSessionId: sessionId,
 		chatMessages: (messages ?? []) as ChatMessage[]
 	};
