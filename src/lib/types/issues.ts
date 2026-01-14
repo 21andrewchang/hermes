@@ -9,4 +9,5 @@ export interface IssueRow {
 	action: string | null;
 	status: IssueStatus;
 	is_draft: boolean | null;
+	draft: string | null;
 }

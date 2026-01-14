@@ -47,7 +47,7 @@ async function getOrCreateSession(): Promise<string> {
 export const load: PageServerLoad<LoadData> = async () => {
 	const issuesPromise = supabase
 		.from('issues')
-		.select('id, reported_at, building, unit, description, action, status, is_draft')
+		.select('id, reported_at, building, unit, description, action, status, is_draft, draft')
 		.order('reported_at', { ascending: false });
 
 	const invoicesPromise = supabase

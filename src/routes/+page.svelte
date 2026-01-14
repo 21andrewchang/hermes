@@ -50,6 +50,7 @@
 		status: 'Needs Approval' | 'Review' | 'Pending' | 'In Progress' | 'Complete';
 		isDraft?: boolean;
 		unitFilter?: string;
+		draft?: string | null;
 	}
 
 	const statusOptions: TableEntry['status'][] = [
@@ -192,7 +193,8 @@ const buildingUnitMap: Record<BuildingTab, string[]> = {
 			description: issue.description ?? '',
 			action: issue.action ?? '',
 			status: issue.status ?? 'Needs Approval',
-			isDraft: issue.is_draft ?? false
+			isDraft: issue.is_draft ?? false,
+			draft: issue.draft ?? null
 		};
 	}
 
@@ -247,7 +249,8 @@ const statusRank: Record<TableEntry['status'], number> = {
 			description: entry.description,
 			action: entry.action,
 			status: entry.status,
-			is_draft: entry.isDraft ?? false
+			is_draft: entry.isDraft ?? false,
+			draft: entry.draft ?? null
 		};
 	}
 
@@ -255,7 +258,7 @@ const statusRank: Record<TableEntry['status'], number> = {
 		const { data, error } = await supabase
 			.from('issues')
 			.upsert(entryToPayload(entry))
-			.select('id, reported_at, building, unit, description, action, status, is_draft')
+			.select('id, reported_at, building, unit, description, action, status, is_draft, draft')
 			.single();
 
 		if (error) {
@@ -301,6 +304,11 @@ let openStatusIndex = $state<number | null>(null);
 let openBuildingIndex = $state<number | null>(null);
 let openUnitIndex = $state<number | null>(null);
 let selectedIds = $state<Set<string>>(new Set());
+let expandedId = $state<string | null>(null);
+
+function toggleExpand(id: string) {
+	expandedId = expandedId === id ? null : id;
+}
 
 function toggleSelection(id: string) {
 	const newSet = new Set(selectedIds);
@@ -481,6 +489,11 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 	function handleFieldInput(index: number, field: EditableField, event: Event) {
 		const target = event.currentTarget as HTMLInputElement | HTMLTextAreaElement;
 		updateEntryField(index, field, target.value);
+	}
+
+	function handleDraftInput(index: number, event: Event) {
+		const target = event.target as HTMLTextAreaElement;
+		entries[index].draft = target.value;
 	}
 
 	function toggleBuildingMenu(index: number) {
@@ -759,7 +772,14 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 									<div
 										class="grid grid-cols-[40px_100px_0.9fr_0.75fr_2fr_1.4fr_1fr] border-b border-stone-200 text-sm text-stone-800"
 									>
-										<div class="flex items-center justify-center py-2">
+										<div class="flex items-center justify-center gap-1 py-2">
+											<button
+												class="text-stone-400 hover:text-stone-600 focus:outline-none"
+												onclick={() => toggleExpand(entry.id)}
+												aria-label="Expand details"
+											>
+												{expandedId === entry.id ? '▼' : '▶'}
+											</button>
 											<input
 												type="checkbox"
 												class="h-4 w-4 rounded border-stone-300 text-stone-800 focus:ring-stone-500"
@@ -959,6 +979,28 @@ function isBuildingTab(tab: Tab): tab is BuildingTab {
 											{/if}
 										</div>
 									</div>
+									{#if expandedId === entry.id}
+										<div class="border-b border-stone-200 bg-stone-50 p-4">
+											<div class="space-y-3">
+												<div>
+													<label class="text-xs font-medium text-stone-600"
+														>Draft Message to {entry.action || 'Contact'}</label
+													>
+													<textarea
+														class="mt-1 w-full rounded-md border border-stone-300 p-2 text-sm text-stone-800 outline-none transition focus:border-stone-500 focus:ring-2 focus:ring-stone-200"
+														rows="3"
+														value={entry.draft ?? ''}
+														oninput={(e) => handleDraftInput(index, e)}
+														onblur={() => handleFieldBlur(index)}
+														placeholder="Enter a message to {entry.action || 'the contact'}..."
+													></textarea>
+												</div>
+												<div class="text-xs text-stone-400">
+													Building: {entry.building || 'N/A'} | Unit: {entry.unit || 'N/A'} | Status: {entry.status}
+												</div>
+											</div>
+										</div>
+									{/if}
 								{/each}
 							</div>
 						</div>

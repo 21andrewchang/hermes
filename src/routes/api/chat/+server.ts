@@ -27,7 +27,13 @@ Rules (current mode: issue creation only):
    - **Rufino**: Plumber. For all plumbing issues (leaks, clogs, water heaters, etc).
    - **Magic Fix**: Appliance technician. For appliance repairs (dishwasher, washer/dryer, stove, refrigerator, etc).
 
-5. Summarize the issue, note who to contact, and state whether a ticket was created.`;
+5. Generate a short draft message to the contact person. The message should:
+   - Be addressed to the contact (e.g., "Hi Esther,")
+   - Briefly explain the issue and what needs to be done
+   - Be 2-3 sentences max
+   - Be professional but friendly
+
+6. Summarize the issue, note who to contact, and state whether a ticket was created.`;
 
 const tools: ChatCompletionTool[] = [
 	{
@@ -63,6 +69,10 @@ const tools: ChatCompletionTool[] = [
 					reported_at: {
 						type: 'string',
 						description: 'ISO timestamp for when the issue was reported.'
+					},
+					draft: {
+						type: 'string',
+						description: 'Short draft message to the contact person (2-3 sentences, professional but friendly).'
 					}
 				},
 				required: ['building', 'unit', 'description']
@@ -198,6 +208,7 @@ interface CreateIssueArgs {
 	action?: string;
 	status?: IssueStatus | string;
 	reported_at?: string;
+	draft?: string;
 }
 
 async function createIssueFromArgs(args: CreateIssueArgs): Promise<ToolCallResult> {
@@ -212,13 +223,14 @@ async function createIssueFromArgs(args: CreateIssueArgs): Promise<ToolCallResul
 		action: args.action?.trim() ?? '',
 		status: normalizeStatus(args.status),
 		reported_at: args.reported_at ?? new Date().toISOString(),
-		is_draft: false
+		is_draft: false,
+		draft: args.draft?.trim() ?? null
 	};
 
 	const { data, error } = await supabase
 		.from('issues')
 		.insert(payload)
-		.select('id, reported_at, building, unit, description, action, status, is_draft')
+		.select('id, reported_at, building, unit, description, action, status, is_draft, draft')
 		.single();
 
 	if (error || !data) {
