@@ -1,0 +1,16 @@
+[
+  {
+    "id": "seed-andrew-1",
+    "sender_id": "hermes",
+    "sender_type": "ai",
+    "content": "Hi Andrew. Dump anything on your mind. No pressure to solve it.",
+    "timestamp": "2025-01-01T09:00:00.000Z"
+  },
+  {
+    "id": "ad74ddde-f80b-4c63-8606-7b2aa0ae88d5",
+    "sender_id": "andrew",
+    "sender_type": "user",
+    "content": "hi chat",
+    "timestamp": "2026-01-15T14:26:41.201Z"
+  }
+]
