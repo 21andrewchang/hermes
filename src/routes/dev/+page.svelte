@@ -7,68 +7,44 @@
 		id: string;
 		email: string | null;
 		name: string | null;
-		mood_score: number | null;
-		mood_confidence: number | null;
-	};
-
-	type Issue = {
-		id: string;
-		created_by_user_id: string | null;
-		title: string;
-		stage: string | null;
-		severity: string | null;
-		active: boolean;
-		created_at: string;
-	};
-
-	type LogEntry = {
-		id: string;
-		user_id: string | null;
-		reason: string | null;
-		action: string | null;
-		created_at: string;
 	};
 
 	let profiles = $state<Profile[]>([]);
-	let issues = $state<Issue[]>([]);
-	let logs = $state<LogEntry[]>([]);
 	let errorMessage = $state<string | null>(null);
 
-	const loadData = async () => {
-		const { data: sessionData } = await supabase.auth.getSession();
-		if (!sessionData.session) {
-			goto('/');
+	const loadProfiles = async () => {
+		const { data, error } = await supabase
+			.from('profiles')
+			.select('id, email, name')
+			.order('created_at', { ascending: true });
+
+		if (error) {
+			errorMessage = error.message;
 			return;
 		}
 
-		const [profilesResult, issuesResult, logsResult] = await Promise.all([
-			supabase.from('profiles').select('*').order('created_at', { ascending: true }),
-			supabase.from('issues').select('*').order('created_at', { ascending: false }),
-			supabase.from('logs').select('*').order('created_at', { ascending: false })
-		]);
-
-		if (profilesResult.error || issuesResult.error || logsResult.error) {
-			errorMessage =
-				profilesResult.error?.message ||
-				issuesResult.error?.message ||
-				logsResult.error?.message ||
-				'Failed to load dev data.';
-			return;
-		}
-
-		profiles = (profilesResult.data ?? []) as Profile[];
-		issues = (issuesResult.data ?? []) as Issue[];
-		logs = (logsResult.data ?? []) as LogEntry[];
+		profiles = (data ?? []) as Profile[];
 	};
 
-	onMount(loadData);
+	const switchUser = (profile: Profile) => {
+		localStorage.setItem('hermes_dev_user_id', profile.id);
+		goto('/chat');
+	};
+
+	const clearDevOverride = () => {
+		localStorage.removeItem('hermes_dev_user_id');
+		goto('/');
+	};
+
+	onMount(loadProfiles);
 </script>
 
-<main class="min-h-screen bg-white px-6 py-10 text-stone-900">
-	<div class="mx-auto w-full max-w-6xl space-y-10">
+<main class="min-h-screen bg-white px-6 py-12 text-stone-900">
+	<div class="mx-auto w-full max-w-3xl space-y-10">
 		<header class="space-y-2">
 			<p class="text-xs uppercase tracking-[0.3em] text-stone-500">Hermes Dev</p>
-			<h1 class="text-2xl font-semibold">Supabase snapshot</h1>
+			<h1 class="text-2xl font-semibold">Switch user</h1>
+			<p class="text-sm text-stone-500">Click a name to enter chat as that founder.</p>
 		</header>
 
 		{#if errorMessage}
@@ -77,96 +53,34 @@
 			</p>
 		{/if}
 
-		<section class="space-y-3">
-			<h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-stone-500">Profiles</h2>
-			<div class="overflow-x-auto rounded-2xl border border-stone-200">
-				<table class="min-w-full border-collapse text-left text-xs text-stone-700">
-					<thead class="bg-stone-50 text-[11px] uppercase tracking-[0.2em] text-stone-500">
-						<tr>
-							<th class="border-b border-stone-200 px-4 py-3">Name</th>
-							<th class="border-b border-stone-200 px-4 py-3">Email</th>
-							<th class="border-b border-stone-200 px-4 py-3">Mood</th>
-							<th class="border-b border-stone-200 px-4 py-3">Confidence</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each profiles as profile (profile.id)}
-							<tr class="odd:bg-white even:bg-stone-50">
-								<td class="border-b border-stone-100 px-4 py-3">
-									{profile.name ?? '-'}
-								</td>
-								<td class="border-b border-stone-100 px-4 py-3">
-									{profile.email ?? '-'}
-								</td>
-								<td class="border-b border-stone-100 px-4 py-3">
-									{profile.mood_score ?? '-'}
-								</td>
-								<td class="border-b border-stone-100 px-4 py-3">
-									{profile.mood_confidence ?? '-'}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</section>
+		<div class="grid gap-4 sm:grid-cols-2">
+			{#each profiles as profile (profile.id)}
+				<button
+					type="button"
+					class="rounded-2xl border border-stone-200 bg-white px-5 py-4 text-left shadow-sm transition hover:border-stone-300"
+					on:click={() => switchUser(profile)}
+				>
+					<p class="text-sm font-semibold text-stone-900">{profile.name ?? 'Founder'}</p>
+					<p class="mt-1 text-xs text-stone-500">{profile.email ?? profile.id}</p>
+				</button>
+			{/each}
+		</div>
 
-		<section class="space-y-3">
-			<h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-stone-500">Issues</h2>
-			<div class="overflow-x-auto rounded-2xl border border-stone-200">
-				<table class="min-w-full border-collapse text-left text-xs text-stone-700">
-					<thead class="bg-stone-50 text-[11px] uppercase tracking-[0.2em] text-stone-500">
-						<tr>
-							<th class="border-b border-stone-200 px-4 py-3">Title</th>
-							<th class="border-b border-stone-200 px-4 py-3">Stage</th>
-							<th class="border-b border-stone-200 px-4 py-3">Severity</th>
-							<th class="border-b border-stone-200 px-4 py-3">Active</th>
-							<th class="border-b border-stone-200 px-4 py-3">Created By</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each issues as issue (issue.id)}
-							<tr class="odd:bg-white even:bg-stone-50">
-								<td class="border-b border-stone-100 px-4 py-3">{issue.title}</td>
-								<td class="border-b border-stone-100 px-4 py-3">{issue.stage ?? '-'}</td>
-								<td class="border-b border-stone-100 px-4 py-3">{issue.severity ?? '-'}</td>
-								<td class="border-b border-stone-100 px-4 py-3">{issue.active ? 'Yes' : 'No'}</td>
-								<td class="border-b border-stone-100 px-4 py-3">
-									{issue.created_by_user_id ?? '-'}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</section>
-
-		<section class="space-y-3">
-			<h2 class="text-sm font-semibold uppercase tracking-[0.2em] text-stone-500">Logs</h2>
-			<div class="overflow-x-auto rounded-2xl border border-stone-200">
-				<table class="min-w-full border-collapse text-left text-xs text-stone-700">
-					<thead class="bg-stone-50 text-[11px] uppercase tracking-[0.2em] text-stone-500">
-						<tr>
-							<th class="border-b border-stone-200 px-4 py-3">User</th>
-							<th class="border-b border-stone-200 px-4 py-3">Reason</th>
-							<th class="border-b border-stone-200 px-4 py-3">Action</th>
-							<th class="border-b border-stone-200 px-4 py-3">Created</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each logs as log (log.id)}
-							<tr class="odd:bg-white even:bg-stone-50">
-								<td class="border-b border-stone-100 px-4 py-3">{log.user_id ?? '-'}</td>
-								<td class="border-b border-stone-100 px-4 py-3">{log.reason ?? '-'}</td>
-								<td class="border-b border-stone-100 px-4 py-3">{log.action ?? '-'}</td>
-								<td class="border-b border-stone-100 px-4 py-3">
-									{new Date(log.created_at).toLocaleString()}
-								</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</section>
+		<div class="flex flex-wrap items-center gap-3">
+			<button
+				type="button"
+				class="rounded-full border border-stone-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-700"
+				on:click={() => goto('/logs')}
+			>
+				View logs
+			</button>
+			<button
+				type="button"
+				class="rounded-full border border-stone-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-stone-700"
+				on:click={clearDevOverride}
+			>
+				Exit dev mode
+			</button>
+		</div>
 	</div>
 </main>

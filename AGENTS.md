@@ -44,7 +44,8 @@ Current App State
 - Routes:
   - `/` login with email/password only.
   - `/chat` main chat UI, centered layout (~70% width).
-  - `/dev` table view for profiles, issues, logs.
+  - `/dev` dev user switcher (no password, instant swap).
+  - `/logs` logs/checkins/issues/profiles view.
 - UI:
   - Header row pinned top (Hermes left, issue pill centered, user dropdown right).
   - Issue pill: tiny glow dot + title, fly-in animation from above.
@@ -63,8 +64,7 @@ Current App State
   - Issue creation uses OpenAI via `/api/assistant`.
 
 - Notifications:
-  - Daily check-in toast (once per user per day).
-  - Proactive toast when other cofounder sends a new message (polling).
+  - Checkin toast only: “A new checkin is ready.” (user opens to insert prompt).
 - Admin:
   - Reset history action via user dropdown, calls `/api/reset` to clear messages/issues/logs/sessions and reset mood fields.
 - Testing:
@@ -76,11 +76,14 @@ Recent Changes
 - Rebuilt app to Supabase (removed local JSON system).
 - Tightened issue title prompt with concrete examples, global issue context, and update semantics.
 - Added reset API + dropdown control.
-- Added notifications (check-in + other-user updates).
+- Added checkin notifications (toast-first delivery).
 - Added action list handling with checkin delivery and strict JSON schema responses.
 - Added OpenAI error logging for non-200 responses.
 - Added mood update action handling.
 - Added other-profile context for notify_other UUIDs and checkin insert error logging.
+- Removed daily/other-user toasts; checkins are the only toast.
+- Switch user dropdown swaps profiles directly in `/chat`.
+- Prompt rules tightened to avoid internal phrasing, require clarification before surfacing, and keep checkins neutral.
 
 Future Features
 
@@ -92,6 +95,7 @@ Future Features
 - Calendar integrations.
 - Customize your experience (tone setting).
 - Tone shifts based on user personality + current mood.
+- Optional practical plans/suggestions mode (user-triggered).
 - Mobile support.
 - Tone settings can be user-configurable (per your “write that down” note).
 - Make it really startup focused.

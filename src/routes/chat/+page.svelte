@@ -40,7 +40,7 @@
 	type Toast = {
 		id: string;
 		message: string;
-		kind: 'checkin' | 'update';
+		kind: 'checkin';
 		checkinId?: string;
 		payload?: string;
 	};
@@ -48,7 +48,6 @@
 	let profile = $state<Profile | null>(null);
 	let otherProfile = $state<Profile | null>(null);
 	let chatSession = $state<ChatSession | null>(null);
-	let otherSession = $state<ChatSession | null>(null);
 	let messages = $state<ChatMessage[]>([]);
 	let issue = $state<Issue | null>(null);
 	let toasts = $state<Toast[]>([]);
@@ -66,6 +65,20 @@
 	};
 
 	const loadProfile = async () => {
+		const devUserId = localStorage.getItem('hermes_dev_user_id');
+		if (devUserId) {
+			const { data: devProfile } = await supabase
+				.from('profiles')
+				.select('*')
+				.eq('id', devUserId)
+				.maybeSingle();
+			if (!devProfile) {
+				errorMessage = 'Dev user not found.';
+				return null;
+			}
+			return devProfile as Profile;
+		}
+
 		const { data, error } = await supabase.auth.getSession();
 		if (error || !data.session?.user) {
 			goto('/');
@@ -123,18 +136,6 @@
 		}
 
 		return createdSession as ChatSession;
-	};
-
-	const findChatSession = async (userId: string) => {
-		const { data } = await supabase
-			.from('chat_sessions')
-			.select('*')
-			.eq('user_id', userId)
-			.order('created_at', { ascending: true })
-			.limit(1)
-			.maybeSingle();
-
-		return (data as ChatSession | null) ?? null;
 	};
 
 	const loadMessages = async (sessionId: string) => {
@@ -201,35 +202,11 @@
 		toasts = toasts.filter((toast) => toast.id !== id);
 	};
 
-	const maybeShowCheckIn = (userId: string) => {
-		const today = new Date().toISOString().slice(0, 10);
-		const key = `hermes_checkin_${userId}`;
-		const last = localStorage.getItem(key);
-		if (last === today) return;
-		localStorage.setItem(key, today);
-		addToast({ message: 'Daily check-in: how are you feeling today?', kind: 'checkin' });
-	};
-
-	const checkOtherUpdates = async () => {
-		if (!otherProfile || !otherSession) return;
-		const { data } = await supabase
-			.from('chat_messages')
-			.select('created_at')
-			.eq('session_id', otherSession.id)
-			.eq('sender_type', 'user')
-			.order('created_at', { ascending: false })
-			.limit(1)
-			.maybeSingle();
-
-		const latest = data?.created_at;
-		if (!latest) return;
-		const key = `hermes_last_seen_${otherProfile.id}`;
-		const lastSeen = localStorage.getItem(key);
-		if (!lastSeen || new Date(latest) > new Date(lastSeen)) {
-			localStorage.setItem(key, latest);
-			const name = otherProfile.name ?? 'Your cofounder';
-			addToast({ message: `${name} shared an update. Want to check in?`, kind: 'update' });
-		}
+	const switchDevUser = () => {
+		if (!otherProfile) return;
+		localStorage.setItem('hermes_dev_user_id', otherProfile.id);
+		toasts = [];
+		window.location.href = '/chat';
 	};
 
 	const deliverCheckins = async () => {
@@ -252,7 +229,7 @@
 			localStorage.setItem(seenKey, 'true');
 			const payload = checkin.payload ?? 'Quick check-in: how are you feeling today?';
 			addToast({
-				message: 'Hermes check-in ready. Open when you’re ready.',
+				message: 'A new checkin is ready.',
 				kind: 'checkin',
 				checkinId: checkin.id,
 				payload
@@ -300,8 +277,6 @@
 		issue = await loadIssue(loadedProfile.id);
 
 		otherProfile = await loadOtherProfile(loadedProfile.id);
-		otherSession = otherProfile ? await findChatSession(otherProfile.id) : null;
-		maybeShowCheckIn(loadedProfile.id);
 		await deliverCheckins();
 	};
 
@@ -392,11 +367,9 @@
 
 	onMount(() => {
 		refresh().then(() => {
-			checkOtherUpdates();
 			deliverCheckins();
 		});
 		const interval = setInterval(() => {
-			checkOtherUpdates();
 			deliverCheckins();
 		}, 30000);
 		return () => clearInterval(interval);
@@ -490,8 +463,15 @@
 					</button>
 					{#if showMenu}
 						<div
-							class="absolute right-0 top-full mt-2 w-40 rounded-xl border border-stone-200 bg-white p-1 text-sm shadow-lg"
+							class="absolute right-0 top-full mt-2 w-48 rounded-xl border border-stone-200 bg-white p-1 text-sm shadow-lg"
 						>
+							<button
+								type="button"
+								class="w-full rounded-lg px-3 py-2 text-left text-sm text-stone-700 transition hover:bg-stone-50"
+								on:click={switchDevUser}
+							>
+								Switch user (dev)
+							</button>
 							<button
 								type="button"
 								class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50"
@@ -509,9 +489,7 @@
 		<div class="fixed right-6 top-6 z-50 flex w-72 flex-col gap-3">
 			{#each toasts as toast (toast.id)}
 				<div
-					class={`rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 shadow-lg ${
-						toast.kind === 'checkin' ? 'border-stone-300' : 'border-stone-200'
-					}`}
+					class="rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm text-stone-800 shadow-lg"
 					in:fly={{ y: -8, duration: 200 }}
 				>
 					<div class="flex items-start justify-between gap-3">
@@ -520,15 +498,13 @@
 							<p class="mt-1 text-sm text-stone-800">{toast.message}</p>
 						</div>
 						<div class="flex items-center gap-2">
-							{#if toast.kind === 'checkin'}
-								<button
-									type="button"
-									class="text-xs font-semibold text-stone-700 transition hover:text-stone-900"
-									on:click={() => openCheckin(toast)}
-								>
-									Open
-								</button>
-							{/if}
+							<button
+								type="button"
+								class="text-xs font-semibold text-stone-700 transition hover:text-stone-900"
+								on:click={() => openCheckin(toast)}
+							>
+								Open
+							</button>
 							<button
 								type="button"
 								class="text-xs text-stone-400 transition hover:text-stone-600"
