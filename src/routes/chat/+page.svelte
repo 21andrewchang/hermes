@@ -29,16 +29,26 @@
 		id: string;
 		created_by_user_id: string | null;
 		title: string;
+		context?: string | null;
 		stage: string | null;
 		severity: string | null;
 		active: boolean;
 		created_at: string;
 	};
 
+	type Toast = {
+		id: string;
+		message: string;
+		kind: 'checkin' | 'update';
+	};
+
 	let profile = $state<Profile | null>(null);
+	let otherProfile = $state<Profile | null>(null);
 	let chatSession = $state<ChatSession | null>(null);
+	let otherSession = $state<ChatSession | null>(null);
 	let messages = $state<ChatMessage[]>([]);
 	let issue = $state<Issue | null>(null);
+	let toasts = $state<Toast[]>([]);
 	let draft = $state('');
 	let errorMessage = $state<string | null>(null);
 	let isSending = $state(false);
@@ -112,6 +122,18 @@
 		return createdSession as ChatSession;
 	};
 
+	const findChatSession = async (userId: string) => {
+		const { data } = await supabase
+			.from('chat_sessions')
+			.select('*')
+			.eq('user_id', userId)
+			.order('created_at', { ascending: true })
+			.limit(1)
+			.maybeSingle();
+
+		return (data as ChatSession | null) ?? null;
+	};
+
 	const loadMessages = async (sessionId: string) => {
 		const { data, error } = await supabase
 			.from('chat_messages')
@@ -132,11 +154,78 @@
 			.from('issues')
 			.select('*')
 			.eq('created_by_user_id', userId)
+			.or('stage.is.null,stage.neq.resolved');
+
+		const issues = (data ?? []) as Issue[];
+		if (issues.length === 0) return null;
+
+		const severityScore = (severity: string | null) => {
+			switch (severity) {
+				case 'high':
+					return 3;
+				case 'med':
+					return 2;
+				case 'low':
+					return 1;
+				default:
+					return 0;
+			}
+		};
+
+		return issues.reduce((best, current) => {
+			const bestScore = (best.active ? 100 : 0) + severityScore(best.severity);
+			const currentScore = (current.active ? 100 : 0) + severityScore(current.severity);
+			if (currentScore > bestScore) return current;
+			if (currentScore < bestScore) return best;
+			return new Date(current.created_at) > new Date(best.created_at) ? current : best;
+		});
+	};
+
+	const loadOtherProfile = async (userId: string) => {
+		const { data } = await supabase.from('profiles').select('*').neq('id', userId).limit(1);
+		return (data?.[0] as Profile | undefined) ?? null;
+	};
+
+	const createToastId = () =>
+		globalThis.crypto?.randomUUID?.() ?? `toast-${Math.random().toString(16).slice(2)}`;
+
+	const addToast = (message: string, kind: Toast['kind']) => {
+		const id = createToastId();
+		toasts = [...toasts, { id, message, kind }];
+	};
+
+	const dismissToast = (id: string) => {
+		toasts = toasts.filter((toast) => toast.id !== id);
+	};
+
+	const maybeShowCheckIn = (userId: string) => {
+		const today = new Date().toISOString().slice(0, 10);
+		const key = `hermes_checkin_${userId}`;
+		const last = localStorage.getItem(key);
+		if (last === today) return;
+		localStorage.setItem(key, today);
+		addToast('Daily check-in: how are you feeling today?', 'checkin');
+	};
+
+	const checkOtherUpdates = async () => {
+		if (!otherProfile || !otherSession) return;
+		const { data } = await supabase
+			.from('chat_messages')
+			.select('created_at')
+			.eq('session_id', otherSession.id)
 			.order('created_at', { ascending: false })
 			.limit(1)
 			.maybeSingle();
 
-		return (data as Issue | null) ?? null;
+		const latest = data?.created_at;
+		if (!latest) return;
+		const key = `hermes_last_seen_${otherProfile.id}`;
+		const lastSeen = localStorage.getItem(key);
+		if (!lastSeen || new Date(latest) > new Date(lastSeen)) {
+			localStorage.setItem(key, latest);
+			const name = otherProfile.name ?? 'Your cofounder';
+			addToast(`${name} shared an update. Want to check in?`, 'update');
+		}
 	};
 
 	const refresh = async () => {
@@ -151,6 +240,10 @@
 
 		messages = await loadMessages(session.id);
 		issue = await loadIssue(loadedProfile.id);
+
+		otherProfile = await loadOtherProfile(loadedProfile.id);
+		otherSession = otherProfile ? await findChatSession(otherProfile.id) : null;
+		maybeShowCheckIn(loadedProfile.id);
 	};
 
 	const sendMessage = async () => {
@@ -233,7 +326,11 @@
 		isResetting = false;
 	};
 
-	onMount(refresh);
+	onMount(() => {
+		refresh().then(checkOtherUpdates);
+		const interval = setInterval(checkOtherUpdates, 30000);
+		return () => clearInterval(interval);
+	});
 </script>
 
 <main class="min-h-screen bg-white text-stone-900">
@@ -279,6 +376,31 @@
 				{/if}
 			</div>
 		</header>
+
+		<div class="fixed right-6 top-6 z-50 flex w-72 flex-col gap-3">
+			{#each toasts as toast (toast.id)}
+				<div
+					class={`rounded-lg border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 shadow-lg ${
+						toast.kind === 'checkin' ? 'border-stone-300' : 'border-stone-200'
+					}`}
+					in:fly={{ y: -8, duration: 200 }}
+				>
+					<div class="flex items-start justify-between gap-3">
+						<div>
+							<p class="text-[11px] uppercase tracking-[0.2em] text-stone-500">Hermes</p>
+							<p class="mt-1 text-sm text-stone-800">{toast.message}</p>
+						</div>
+						<button
+							type="button"
+							class="text-xs text-stone-400 transition hover:text-stone-600"
+							on:click={() => dismissToast(toast.id)}
+						>
+							Close
+						</button>
+					</div>
+				</div>
+			{/each}
+		</div>
 
 		{#if errorMessage}
 			<p class="mb-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
