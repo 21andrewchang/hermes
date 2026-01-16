@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { supabase } from '$lib/supabaseClient';
 
@@ -48,9 +49,6 @@
 		if (email.toLowerCase() === 'nicoluo@gmail.com') return 'Nico';
 		return email.split('@')[0] ?? 'Founder';
 	};
-
-	const formatTime = (value: string) =>
-		new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 	const loadProfile = async () => {
 		const { data, error } = await supabase.auth.getSession();
@@ -218,24 +216,26 @@
 
 <main class="min-h-screen bg-white text-stone-900">
 	<div class="mx-auto flex min-h-screen w-full flex-col px-6 py-10 lg:w-[70%]">
-		<header class="mb-8 flex items-center justify-between">
+		<header class="mb-10 grid min-h-[52px] grid-cols-[1fr_auto_1fr] items-center">
 			<p class="text-xs uppercase tracking-[0.3em] text-stone-500">Hermes</p>
-			<p class="text-sm font-semibold text-stone-800">{profile?.name ?? ''}</p>
-		</header>
-
-		{#if issue}
-			<div class="mb-8 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm">
-				<p class="text-xs uppercase tracking-[0.2em] text-stone-500">Current issue</p>
-				<div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-					<p class="text-base font-medium text-stone-800">{issue.title}</p>
-					<span
-						class="rounded-full border border-stone-200 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-stone-500"
+			<div class="flex min-h-[36px] justify-center">
+				{#if issue}
+					<div
+						class="flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-800 shadow-sm"
+						transition:fly={{ y: -12, duration: 250 }}
 					>
-						{issue.stage ?? 'new'}
-					</span>
-				</div>
+						<span class="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
+						></span>
+						<span class="text-xs font-medium">{issue.title}</span>
+					</div>
+				{:else}
+					<div class="h-9"></div>
+				{/if}
 			</div>
-		{/if}
+			<div class="flex justify-end">
+				<p class="text-sm font-semibold text-stone-800">{profile?.name ?? ''}</p>
+			</div>
+		</header>
 
 		{#if errorMessage}
 			<p class="mb-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
@@ -249,7 +249,7 @@
 					<div
 						class={message.sender_type === 'ai'
 							? 'w-full text-left'
-							: 'inline-flex max-w-[70%] text-right'}
+							: 'inline-flex max-w-[70%]'}
 					>
 						<div
 							class={message.sender_type === 'ai'

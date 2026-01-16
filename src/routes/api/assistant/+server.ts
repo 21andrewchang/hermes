@@ -11,7 +11,7 @@ const buildPrompt = (messages: Array<{ sender_type: string; content: string }>) 
 		.map((message) => `${message.sender_type === 'user' ? 'User' : 'Hermes'}: ${message.content}`)
 		.join('\n');
 
-	return `You are Hermes, an internal mediator for cofounder conflict.\n\nReturn JSON only with this shape:\n{\n  "reply": "...",\n  "issue": {\n    "title": "...",\n    "stage": "detected|clarified|self_improvement|surfaced_soft|escalated_detail|scheduled|resolved",\n    "severity": "low|med|high"\n  } | null\n}\n\nRules:\n- Reply should acknowledge the user's situation and ask a clarifying question.\n- If the user expresses a concrete issue or conflict, create an issue object with a short title.\n- If there is no clear issue, set issue to null.\n\nConversation:\n${history}`;
+	return `You are Hermes, an internal mediator for cofounder conflict.\n\nReturn JSON only with this shape:\n{\n  "reply": "...",\n  "issue": {\n    "title": "...",\n    "stage": "detected|clarified|self_improvement|surfaced_soft|escalated_detail|scheduled|resolved",\n    "severity": "low|med|high"\n  } | null\n}\n\nRules:\n- Reply should acknowledge the user's situation and ask a clarifying question.\n- If the user expresses a concrete issue or conflict, create an issue object with a short title.\n- Issue titles must be concrete and situation-specific (2-6 words), describing the exact object/event.\n- Avoid generic titles like "Conflict", "Misunderstanding", "Issue", or "Problem".\n- Examples: "Tissues on counter", "Mom yelled about dishes", "Missed standup update".\n- If there is no clear issue, set issue to null.\n\nConversation:\n${history}`;
 };
 
 export const POST: RequestHandler = async ({ request }) => {
