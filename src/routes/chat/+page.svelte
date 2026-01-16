@@ -42,6 +42,8 @@
 	let draft = $state('');
 	let errorMessage = $state<string | null>(null);
 	let isSending = $state(false);
+	let showMenu = $state(false);
+	let isResetting = $state(false);
 
 	const resolveName = (email: string | null) => {
 		if (!email) return 'Founder';
@@ -211,6 +213,26 @@
 		sendMessage();
 	};
 
+	const resetHistory = async () => {
+		if (isResetting) return;
+		isResetting = true;
+		showMenu = false;
+		errorMessage = null;
+
+		const response = await fetch('/api/reset', { method: 'POST' });
+		if (!response.ok) {
+			const payload = (await response.json()) as { errors?: string[] };
+			errorMessage = payload.errors?.join(' | ') ?? 'Failed to reset history.';
+			isResetting = false;
+			return;
+		}
+
+		messages = [];
+		issue = null;
+		await refresh();
+		isResetting = false;
+	};
+
 	onMount(refresh);
 </script>
 
@@ -232,8 +254,29 @@
 					<div class="h-9"></div>
 				{/if}
 			</div>
-			<div class="flex justify-end">
-				<p class="text-sm font-semibold text-stone-800">{profile?.name ?? ''}</p>
+			<div class="relative flex justify-end">
+				<button
+					type="button"
+					class="flex items-center gap-2 text-sm font-semibold text-stone-800"
+					on:click={() => (showMenu = !showMenu)}
+				>
+					<span>{profile?.name ?? ''}</span>
+					<span class="text-xs text-stone-400">▾</span>
+				</button>
+				{#if showMenu}
+					<div
+						class="absolute right-0 top-full mt-2 w-40 rounded-md border border-stone-200 bg-white p-2 text-sm shadow-lg"
+					>
+						<button
+							type="button"
+							class="w-full rounded-md px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50"
+							on:click={resetHistory}
+							disabled={isResetting}
+						>
+							{isResetting ? 'Resetting...' : 'Reset history'}
+						</button>
+					</div>
+				{/if}
 			</div>
 		</header>
 
@@ -247,9 +290,7 @@
 			{#each messages as message (message.id)}
 				<div class={message.sender_type === 'ai' ? 'w-full' : 'flex w-full justify-end'}>
 					<div
-						class={message.sender_type === 'ai'
-							? 'w-full text-left'
-							: 'inline-flex max-w-[70%]'}
+						class={message.sender_type === 'ai' ? 'w-full text-left' : 'inline-flex max-w-[70%]'}
 					>
 						<div
 							class={message.sender_type === 'ai'
