@@ -1,6 +1,6 @@
-# Hermes v0 (local demo)
+# Hermes MVP (Supabase)
 
-Single-machine SvelteKit prototype using local JSON files as storage.
+Minimal SvelteKit prototype for Hermes using Supabase auth + storage.
 
 ## Setup
 
@@ -9,25 +9,26 @@ npm install
 npm run dev
 ```
 
-## Data files
+Add environment variables to `.env`:
 
-Local JSON storage lives in `data/`:
+```sh
+OPENAI_API_KEY=your-key
+PUBLIC_SUPABASE_URL=your-url
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
-- `data/profiles.json`
-- `data/chat_andrew.json`
-- `data/chat_nico.json`
-- `data/conversation_topics.json`
+## Routes
 
-## API endpoints
+- `/` login (email + password only)
+- `/chat` main chat UI
+- `/dev` logs + profiles + issues snapshot
 
-- `GET /api/profiles`
-- `GET /api/chat/andrew`
-- `GET /api/chat/nico`
-- `POST /api/chat/:user` (body: `{ "content": "..." }`)
-- `GET /api/conversation-topics`
-- `POST /api/conversation-topics`
+## Supabase tables
 
-## UI
+Use the SQL in the latest setup notes to create:
 
-- One page with a settings button group to switch POV.
-- Side-by-side mode shows both chats for testing.
+- `profiles`
+- `issues`
+- `chat_sessions`
+- `chat_messages`
+- `logs`

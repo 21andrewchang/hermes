@@ -1,15 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-	--paper: #fafaf9;
-	--ink: #292524;
-	--muted: #57534e;
-	--line: #e7e5e4;
-}
 
 * {
 	box-sizing: border-box;
@@ -17,9 +8,8 @@
 
 body {
 	margin: 0;
-	font-family: 'Cormorant Garamond', ui-serif, Georgia, serif;
-	background: var(--paper);
-	color: var(--ink);
+	background: #ffffff;
+	color: #0c0a09;
 }
 
 a {
