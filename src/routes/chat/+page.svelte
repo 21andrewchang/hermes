@@ -334,46 +334,91 @@
 </script>
 
 <main class="min-h-screen bg-white text-stone-900">
-	<div class="mx-auto flex min-h-screen w-full flex-col px-6 py-10 lg:w-[70%]">
-		<header class="mb-10 grid min-h-[52px] grid-cols-[1fr_auto_1fr] items-center">
-			<p class="text-xs uppercase tracking-[0.3em] text-stone-500">Hermes</p>
-			<div class="flex min-h-[36px] justify-center">
-				{#if issue}
-					<div
-						class="flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-800 shadow-sm"
-						transition:fly={{ y: -12, duration: 250 }}
-					>
-						<span class="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
-						></span>
-						<span class="text-xs font-medium">{issue.title}</span>
-					</div>
-				{:else}
-					<div class="h-9"></div>
+	<div class="relative h-screen">
+		<div class="absolute inset-0 overflow-y-auto">
+			<div class="mx-auto flex w-full flex-col px-6 pb-32 pt-16 lg:w-[70%]">
+				{#if errorMessage}
+					<p class="mb-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+						{errorMessage}
+					</p>
 				{/if}
+
+				<section class="flex-1 space-y-6">
+					{#each messages as message (message.id)}
+						<div class={message.sender_type === 'ai' ? 'w-full' : 'flex w-full justify-end'}>
+							<div
+								class={message.sender_type === 'ai'
+									? 'w-full text-left'
+									: 'inline-flex max-w-[70%]'}
+							>
+								<div
+									class={message.sender_type === 'ai'
+										? 'mb-6 leading-8 whitespace-pre-wrap text-sm text-stone-700'
+										: 'mb-6 leading-8 whitespace-pre-wrap rounded-2xl bg-stone-50 px-4 py-2 text-sm text-stone-800'}
+								>
+									{message.content}
+								</div>
+							</div>
+						</div>
+					{/each}
+					{#if isSending}
+						<div class="w-full text-left">
+							<div class="text-sm text-stone-500">...</div>
+						</div>
+					{/if}
+				</section>
 			</div>
-			<div class="relative flex justify-end">
-				<button
-					type="button"
-					class="flex items-center gap-2 text-sm font-semibold text-stone-800"
-					on:click={() => (showMenu = !showMenu)}
-				>
-					<span>{profile?.name ?? ''}</span>
-					<span class="text-xs text-stone-400">▾</span>
-				</button>
-				{#if showMenu}
-					<div
-						class="absolute right-0 top-full mt-2 w-40 rounded-md border border-stone-200 bg-white p-2 text-sm shadow-lg"
-					>
-						<button
-							type="button"
-							class="w-full rounded-md px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50"
-							on:click={resetHistory}
-							disabled={isResetting}
+		</div>
+
+		<div
+			class="pointer-events-none absolute left-0 right-0 top-0 z-10 h-24 bg-gradient-to-b from-white/80 to-white/0"
+		></div>
+		<div
+			class="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-24 bg-gradient-to-t from-white/80 to-white/0"
+		></div>
+
+		<header
+			class="fixed left-0 right-0 top-0 z-20 border-stone-100 bg-white lg:bg-transparent border-b lg:border-transparent"
+		>
+			<div class="mx-auto grid min-h-[52px] grid-cols-[1fr_auto_1fr] items-center px-6 py-4">
+				<p class="text-sm uppercase tracking-[0.3em] text-stone-500">Hermes</p>
+				<div class="flex min-h-[36px] justify-center">
+					{#if issue}
+						<div
+							class="flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm text-stone-800"
+							transition:fly={{ y: -12, duration: 250 }}
 						>
-							{isResetting ? 'Resetting...' : 'Reset history'}
-						</button>
-					</div>
-				{/if}
+							<span class="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
+							></span>
+							<span class="text-xs font-medium">{issue.title}</span>
+						</div>
+					{:else}
+						<div class="h-9"></div>
+					{/if}
+				</div>
+				<div class="relative flex justify-end">
+					<button
+						type="button"
+						class="flex items-center gap-2 text-sm font-medium text-stone-800"
+						on:click={() => (showMenu = !showMenu)}
+					>
+						<span>{profile?.name ?? ''}</span>
+					</button>
+					{#if showMenu}
+						<div
+							class="absolute right-0 top-full mt-2 w-40 rounded-xl border border-stone-200 bg-white p-1 text-sm shadow-lg"
+						>
+							<button
+								type="button"
+								class="w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 transition hover:bg-red-50"
+								on:click={resetHistory}
+								disabled={isResetting}
+							>
+								{isResetting ? 'Resetting...' : 'Reset history'}
+							</button>
+						</div>
+					{/if}
+				</div>
 			</div>
 		</header>
 
@@ -402,65 +447,40 @@
 			{/each}
 		</div>
 
-		{#if errorMessage}
-			<p class="mb-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
-				{errorMessage}
-			</p>
-		{/if}
-
-		<section class="flex-1 space-y-6">
-			{#each messages as message (message.id)}
-				<div class={message.sender_type === 'ai' ? 'w-full' : 'flex w-full justify-end'}>
+		<div class="fixed bottom-6 left-0 right-0 z-20">
+			<div class="mx-auto w-full px-6 lg:w-[70%]">
+				<form on:submit|preventDefault={sendMessage}>
 					<div
-						class={message.sender_type === 'ai' ? 'w-full text-left' : 'inline-flex max-w-[70%]'}
+						class="flex items-center gap-3 rounded-full border border-stone-200 bg-white px-6 py-2 shadow-sm"
 					>
-						<div
-							class={message.sender_type === 'ai'
-								? 'mb-6 leading-8 whitespace-pre-wrap text-sm text-stone-700'
-								: 'mb-6 leading-8 whitespace-pre-wrap rounded-2xl bg-stone-50 px-4 py-2 text-sm text-stone-800'}
+						<input
+							id="composer"
+							type="text"
+							class="flex-1 border-none bg-transparent text-sm text-stone-800 outline-none"
+							placeholder="How are you doing?"
+							bind:value={draft}
+							on:keydown={handleKeyDown}
+						/>
+						<button
+							type="submit"
+							disabled={isSending}
+							class="ml-auto -mr-3 flex h-11 w-11 items-center justify-center rounded-full bg-black text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
+							aria-label="Send"
 						>
-							{message.content}
-						</div>
+							<svg
+								class="h-4 w-4"
+								viewBox="0 0 20 20"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
+								<path d="M10 4v12" stroke-linecap="round" />
+								<path d="M5 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
 					</div>
-				</div>
-			{/each}
-			{#if isSending}
-				<div class="w-full text-left">
-					<div class="text-sm text-stone-500">...</div>
-				</div>
-			{/if}
-		</section>
-
-		<form class="mt-10" on:submit|preventDefault={sendMessage}>
-			<div
-				class="flex items-center gap-3 rounded-full border border-stone-200 bg-white px-6 py-2 shadow-sm"
-			>
-				<input
-					id="composer"
-					type="text"
-					class="flex-1 border-none bg-transparent text-sm text-stone-800 outline-none"
-					placeholder="How are you doing?"
-					bind:value={draft}
-					on:keydown={handleKeyDown}
-				/>
-				<button
-					type="submit"
-					disabled={isSending}
-					class="ml-auto -mr-3 flex h-11 w-11 items-center justify-center rounded-full bg-black text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-400"
-					aria-label="Send"
-				>
-					<svg
-						class="h-4 w-4"
-						viewBox="0 0 20 20"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<path d="M10 4v12" stroke-linecap="round" />
-						<path d="M5 9l5-5 5 5" stroke-linecap="round" stroke-linejoin="round" />
-					</svg>
-				</button>
+				</form>
 			</div>
-		</form>
+		</div>
 	</div>
 </main>

@@ -12,6 +12,7 @@ Goal
 - ai should feel proactive and it should feel like they actually care abt your wellbeing and the company and checks in
 
 Next big problems
+
 - how the fuck do we get the ai to bring up the problem to the other user?
 
 Current App State
@@ -21,11 +22,12 @@ Current App State
   - `/chat` main chat UI, centered layout (~70% width).
   - `/dev` table view for profiles, issues, logs.
 - UI:
-  - Header row shows Hermes (left), current issue pill centered, user name dropdown (right).
+  - Header row pinned top (Hermes left, issue pill centered, user dropdown right).
   - Issue pill: tiny glow dot + title, fly-in animation from above.
   - Each user sees their own highest-priority issue (no cross-user leakage).
   - Messages: Hermes left, user right, no names/timestamps, user bubble shrinks to content.
-  - Composer: pill-shaped input with circular send button inside.
+  - Composer pinned bottom (pill-shaped input with circular send button inside).
+  - Chat scrolls behind header/composer with top/bottom fade.
 - Data:
   - Supabase tables: `profiles`, `issues`, `chat_sessions`, `chat_messages`, `logs`.
   - `issues.context` stores evolving summary text.
@@ -42,7 +44,7 @@ Current App State
 Recent Changes
 
 - Rebuilt app to Supabase (removed local JSON system).
-- Tightened issue title prompt with concrete examples and issue update semantics.
+- Tightened issue title prompt with concrete examples, global issue context, and update semantics.
 - Added reset API + dropdown control.
 - Added notifications (check-in + other-user updates).
 
