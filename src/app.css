@@ -15,3 +15,26 @@ body {
 a {
 	color: inherit;
 }
+
+@keyframes hermes-wave {
+	0% {
+		stroke-dashoffset: 0;
+	}
+	100% {
+		stroke-dashoffset: -18;
+	}
+}
+
+.thinking-wave {
+	height: 10px;
+	width: 48px;
+}
+
+.thinking-wave path {
+	fill: none;
+	stroke: currentColor;
+	stroke-linecap: round;
+	stroke-width: 1.6;
+	stroke-dasharray: 12 6;
+	animation: hermes-wave 1.2s linear infinite;
+}

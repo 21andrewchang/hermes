@@ -16,6 +16,7 @@
 		id: string;
 		session_id: string;
 		sender_type: 'user' | 'ai';
+		message_type?: 'response' | 'checkin' | null;
 		content: string;
 		created_at: string;
 	};
@@ -40,6 +41,8 @@
 		id: string;
 		message: string;
 		kind: 'checkin' | 'update';
+		checkinId?: string;
+		payload?: string;
 	};
 
 	let profile = $state<Profile | null>(null);
@@ -189,9 +192,9 @@
 	const createToastId = () =>
 		globalThis.crypto?.randomUUID?.() ?? `toast-${Math.random().toString(16).slice(2)}`;
 
-	const addToast = (message: string, kind: Toast['kind']) => {
+	const addToast = (toast: Omit<Toast, 'id'>) => {
 		const id = createToastId();
-		toasts = [...toasts, { id, message, kind }];
+		toasts = [...toasts, { id, ...toast }];
 	};
 
 	const dismissToast = (id: string) => {
@@ -204,7 +207,7 @@
 		const last = localStorage.getItem(key);
 		if (last === today) return;
 		localStorage.setItem(key, today);
-		addToast('Daily check-in: how are you feeling today?', 'checkin');
+		addToast({ message: 'Daily check-in: how are you feeling today?', kind: 'checkin' });
 	};
 
 	const checkOtherUpdates = async () => {
@@ -213,6 +216,7 @@
 			.from('chat_messages')
 			.select('created_at')
 			.eq('session_id', otherSession.id)
+			.eq('sender_type', 'user')
 			.order('created_at', { ascending: false })
 			.limit(1)
 			.maybeSingle();
@@ -224,8 +228,62 @@
 		if (!lastSeen || new Date(latest) > new Date(lastSeen)) {
 			localStorage.setItem(key, latest);
 			const name = otherProfile.name ?? 'Your cofounder';
-			addToast(`${name} shared an update. Want to check in?`, 'update');
+			addToast({ message: `${name} shared an update. Want to check in?`, kind: 'update' });
 		}
+	};
+
+	const deliverCheckins = async () => {
+		if (!profile) return;
+		const now = new Date().toISOString();
+		const { data: pending } = await supabase
+			.from('checkins')
+			.select('*')
+			.eq('target_user_id', profile.id)
+			.is('sent_at', null)
+			.lte('scheduled_for', now)
+			.order('created_at', { ascending: true });
+
+		const checkins = (pending ?? []) as Array<{ id: string; payload: string | null }>;
+		if (checkins.length === 0) return;
+
+		for (const checkin of checkins) {
+			const seenKey = `hermes_checkin_seen_${checkin.id}`;
+			if (localStorage.getItem(seenKey)) continue;
+			localStorage.setItem(seenKey, 'true');
+			const payload = checkin.payload ?? 'Quick check-in: how are you feeling today?';
+			addToast({
+				message: 'Hermes check-in ready. Open when you’re ready.',
+				kind: 'checkin',
+				checkinId: checkin.id,
+				payload
+			});
+		}
+	};
+
+	const openCheckin = async (toast: Toast) => {
+		if (!toast.checkinId || !chatSession) return;
+		const payload = toast.payload ?? 'Quick check-in: how are you feeling today?';
+		const { data: message } = await supabase
+			.from('chat_messages')
+			.insert({
+				session_id: chatSession.id,
+				sender_type: 'ai',
+				content: payload,
+				message_type: 'checkin'
+			})
+			.select()
+			.single();
+
+		if (message) {
+			messages = [...messages, message as ChatMessage];
+		}
+
+		await supabase
+			.from('checkins')
+			.update({ sent_at: new Date().toISOString() })
+			.eq('id', toast.checkinId);
+
+		dismissToast(toast.id);
 	};
 
 	const refresh = async () => {
@@ -244,6 +302,7 @@
 		otherProfile = await loadOtherProfile(loadedProfile.id);
 		otherSession = otherProfile ? await findChatSession(otherProfile.id) : null;
 		maybeShowCheckIn(loadedProfile.id);
+		await deliverCheckins();
 	};
 
 	const sendMessage = async () => {
@@ -254,7 +313,12 @@
 
 		const { data: userMessage, error } = await supabase
 			.from('chat_messages')
-			.insert({ session_id: chatSession.id, sender_type: 'user', content: trimmed })
+			.insert({
+				session_id: chatSession.id,
+				sender_type: 'user',
+				content: trimmed,
+				message_type: 'response'
+			})
 			.select()
 			.single();
 
@@ -327,8 +391,14 @@
 	};
 
 	onMount(() => {
-		refresh().then(checkOtherUpdates);
-		const interval = setInterval(checkOtherUpdates, 30000);
+		refresh().then(() => {
+			checkOtherUpdates();
+			deliverCheckins();
+		});
+		const interval = setInterval(() => {
+			checkOtherUpdates();
+			deliverCheckins();
+		}, 30000);
 		return () => clearInterval(interval);
 	});
 </script>
@@ -336,7 +406,7 @@
 <main class="min-h-screen bg-white text-stone-900">
 	<div class="relative h-screen">
 		<div class="absolute inset-0 overflow-y-auto">
-			<div class="mx-auto flex w-full flex-col px-6 pb-32 pt-16 lg:w-[70%]">
+			<div class="mx-auto flex w-full flex-col px-6 pb-32 pt-20 lg:w-[70%]">
 				{#if errorMessage}
 					<p class="mb-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
 						{errorMessage}
@@ -345,25 +415,39 @@
 
 				<section class="flex-1 space-y-6">
 					{#each messages as message (message.id)}
-						<div class={message.sender_type === 'ai' ? 'w-full' : 'flex w-full justify-end'}>
-							<div
-								class={message.sender_type === 'ai'
-									? 'w-full text-left'
-									: 'inline-flex max-w-[70%]'}
-							>
-								<div
-									class={message.sender_type === 'ai'
-										? 'mb-6 leading-8 whitespace-pre-wrap text-sm text-stone-700'
-										: 'mb-6 leading-8 whitespace-pre-wrap rounded-2xl bg-stone-50 px-4 py-2 text-sm text-stone-800'}
-								>
+						{#if message.message_type === 'checkin'}
+							<div class="flex w-full justify-center">
+								<div class="rounded-2xl bg-stone-50 px-5 py-3 text-sm italic text-stone-600">
 									{message.content}
 								</div>
 							</div>
-						</div>
+						{:else}
+							<div class={message.sender_type === 'ai' ? 'w-full' : 'flex w-full justify-end'}>
+								<div
+									class={message.sender_type === 'ai'
+										? 'w-full text-left'
+										: 'inline-flex max-w-[70%]'}
+								>
+									<div
+										class={message.sender_type === 'ai'
+											? 'mb-6 leading-8 whitespace-pre-wrap text-sm text-stone-700'
+											: 'mb-6 leading-8 whitespace-pre-wrap rounded-2xl bg-stone-50 px-4 py-2 text-sm text-stone-800'}
+									>
+										{message.content}
+									</div>
+								</div>
+							</div>
+						{/if}
 					{/each}
+
 					{#if isSending}
 						<div class="w-full text-left">
-							<div class="text-sm text-stone-500">...</div>
+							<div class="flex items-center gap-2 text-sm text-stone-500">
+								<span class="font-medium">Thinking</span>
+								<svg class="thinking-wave" viewBox="0 0 48 10" aria-hidden="true">
+									<path d="M0 5 C4 1 8 1 12 5 C16 9 20 9 24 5 C28 1 32 1 36 5 C40 9 44 9 48 5" />
+								</svg>
+							</div>
 						</div>
 					{/if}
 				</section>
@@ -435,13 +519,24 @@
 							<p class="text-[11px] uppercase tracking-[0.2em] text-stone-500">Hermes</p>
 							<p class="mt-1 text-sm text-stone-800">{toast.message}</p>
 						</div>
-						<button
-							type="button"
-							class="text-xs text-stone-400 transition hover:text-stone-600"
-							on:click={() => dismissToast(toast.id)}
-						>
-							Close
-						</button>
+						<div class="flex items-center gap-2">
+							{#if toast.kind === 'checkin'}
+								<button
+									type="button"
+									class="text-xs font-semibold text-stone-700 transition hover:text-stone-900"
+									on:click={() => openCheckin(toast)}
+								>
+									Open
+								</button>
+							{/if}
+							<button
+								type="button"
+								class="text-xs text-stone-400 transition hover:text-stone-600"
+								on:click={() => dismissToast(toast.id)}
+							>
+								Close
+							</button>
+						</div>
 					</div>
 				</div>
 			{/each}

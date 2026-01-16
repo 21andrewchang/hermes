@@ -20,6 +20,7 @@ export const POST: RequestHandler = async () => {
 	await deleteAll('issues');
 	await deleteAll('logs');
 	await deleteAll('chat_sessions');
+	await deleteAll('checkins');
 
 	const { error: profileError } = await supabase
 		.from('profiles')
