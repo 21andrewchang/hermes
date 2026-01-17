@@ -159,12 +159,14 @@ export const POST: RequestHandler = async ({ request }) => {
 	const { data: activeIssue } = await supabase
 		.from('issues')
 		.select('id, title, context, stage, severity, active, created_by_user_id')
+		.eq('created_by_user_id', userId)
 		.eq('active', true)
 		.maybeSingle();
 
 	const { data: openIssues } = await supabase
 		.from('issues')
 		.select('id, title, context, stage, severity, active, created_by_user_id')
+		.eq('created_by_user_id', userId)
 		.or('stage.is.null,stage.neq.resolved');
 
 	const { data: otherProfiles } = await supabase

@@ -331,7 +331,7 @@
 		if (payload.reply) {
 			messages = [...messages, payload.reply];
 		}
-		if (payload.issue) {
+		if (payload.issue && profile && payload.issue.created_by_user_id === profile.id) {
 			issue = payload.issue;
 		} else if (profile) {
 			issue = await loadIssue(profile.id);
@@ -391,8 +391,8 @@
 					{#each messages as message (message.id)}
 						{#if message.message_type === 'checkin'}
 							<div class="flex w-full justify-center">
-								<div class="rounded-2xl bg-stone-50 px-5 py-3 text-sm italic text-stone-600">
-									{message.content}
+								<div class="px-5 py-3 text-sm italic text-stone-500">
+									~ {message.content} ~
 								</div>
 							</div>
 						{:else}
