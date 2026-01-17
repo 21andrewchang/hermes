@@ -1,5 +1,10 @@
 Hermes v0 - Current State (SvelteKit + Tailwind + Supabase)
 
+# TODO
+
+- Design a checkin system: intent types, selection rules, examples, timing.
+- Define the user model: traits/patterns/triggers/preferences to learn.
+
 # NEW FEATURES
 
 ## Proactive Checkins
@@ -8,7 +13,8 @@ Hermes v0 - Current State (SvelteKit + Tailwind + Supabase)
 - Every user message gets a normal response (default action).
 - Checkins are the only proactive channel: a checkin both notifies and delivers a prompt.
 - Checkins should feel like goal reminders, not fire alarms; they happen even without issues.
-- Checkins should reference recent context when possible (e.g., “How did the sales call go?”).
+- Checkins should be general and non-situational; focus on mental state, work wellbeing, or personality patterns.
+- Checkins can reference backlog issues without naming the other founder or current events.
 - If the other user’s mood >= 0.6, a checkin can be shown sooner; otherwise queue it.
 - Checkins always arrive as a notification first; the user opens it to start the prompt.
 
@@ -18,6 +24,14 @@ Hermes v0 - Current State (SvelteKit + Tailwind + Supabase)
 - If the user declines, stay in clarification and offer reflection/self-improvement prompts.
 - Hermes must always comply with the user’s request on whether to surface the issue.
 - Stage gating: never advance stages unless criteria are satisfied; log every stage change.
+
+## Stage Gate Checklist
+
+- Clarification (entry default): capture event (what/when/where), impact on work/decision, and felt experience (emotion + meaning).
+- Clarification (optional): capture expectation gap (what they wanted instead).
+- Clarification exit: event + impact + feelings captured, and user is ready to decide whether to surface.
+- Surface: user explicitly consents to bring it up.
+- Surface: checkin payload is generic and non-situational; no meetings, deadlines, or issue references.
 
 ## Message Types
 
@@ -97,6 +111,7 @@ Future Features
 - Tone shifts based on user personality + current mood.
 - Optional practical plans/suggestions mode (user-triggered).
 - Mobile support.
+- Interpersonal-behavior checkins when mood is high and enough time has passed.
 - Tone settings can be user-configurable (per your “write that down” note).
 - Make it really startup focused.
 - Not just 1 chat thread. maybe daily threads even? that would be pretty good

@@ -224,12 +224,10 @@
 		if (checkins.length === 0) return;
 
 		for (const checkin of checkins) {
-			const seenKey = `hermes_checkin_seen_${checkin.id}`;
-			if (localStorage.getItem(seenKey)) continue;
-			localStorage.setItem(seenKey, 'true');
+			if (toasts.some((toast) => toast.checkinId === checkin.id)) continue;
 			const payload = checkin.payload ?? 'Quick check-in: how are you feeling today?';
 			addToast({
-				message: 'A new checkin is ready.',
+				message: 'A new check-in is ready',
 				kind: 'checkin',
 				checkinId: checkin.id,
 				payload
@@ -254,6 +252,9 @@
 		if (message) {
 			messages = [...messages, message as ChatMessage];
 		}
+
+		const seenKey = `hermes_checkin_seen_${toast.checkinId}`;
+		localStorage.setItem(seenKey, 'true');
 
 		await supabase
 			.from('checkins')
@@ -486,34 +487,36 @@
 			</div>
 		</header>
 
-		<div class="fixed right-6 top-6 z-50 flex w-72 flex-col gap-3">
+		<div
+			class="fixed left-1/2 bottom-24 z-50 flex w-72 -translate-x-1/2 flex-col items-center gap-3"
+		>
 			{#each toasts as toast (toast.id)}
 				<div
-					class="rounded-lg border border-stone-300 bg-white px-4 py-3 text-sm text-stone-800 shadow-lg"
-					in:fly={{ y: -8, duration: 200 }}
+					class="flex items-center gap-3 rounded-full border border-stone-200 bg-white px-4 py-3 text-sm text-stone-800 cursor-pointer hover:bg-stone-100"
+					in:fly={{ y: 8, duration: 200 }}
+					on:click={() => openCheckin(toast)}
 				>
-					<div class="flex items-start justify-between gap-3">
-						<div>
-							<p class="text-[11px] uppercase tracking-[0.2em] text-stone-500">Hermes</p>
-							<p class="mt-1 text-sm text-stone-800">{toast.message}</p>
-						</div>
-						<div class="flex items-center gap-2">
-							<button
-								type="button"
-								class="text-xs font-semibold text-stone-700 transition hover:text-stone-900"
-								on:click={() => openCheckin(toast)}
-							>
-								Open
-							</button>
-							<button
-								type="button"
-								class="text-xs text-stone-400 transition hover:text-stone-600"
-								on:click={() => dismissToast(toast.id)}
-							>
-								Close
-							</button>
-						</div>
-					</div>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="16"
+						height="16"
+						fill="currentColor"
+						viewBox="0 0 16 16"
+						class="text-stone-600"
+					>
+						<path
+							d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1zm13 2.383-4.708 2.825L15 11.105zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741M1 11.105l4.708-2.897L1 5.383z"
+						/>
+					</svg>
+					<p class="text-sm text-stone-800">{toast.message}</p>
+					<button
+						type="button"
+						class="text-sm text-stone-400 transition hover:text-stone-600"
+						aria-label="Close"
+						on:click|stopPropagation={() => dismissToast(toast.id)}
+					>
+						×
+					</button>
 				</div>
 			{/each}
 		</div>

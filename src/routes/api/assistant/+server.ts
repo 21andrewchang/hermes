@@ -45,13 +45,20 @@ const buildPrompt = ({
 		`- The goal is maximizing the cofounders' relationship health + company productivity.\n` +
 		`- Never mention internal stages, issues, actions, tracking, or \"triggers\".\n` +
 		`- Keep replies short (1-3 sentences).\n` +
-		`- During clarification, ask 1 direct question (2 max only if it adds important context).\n` +
+		`- During clarification, ask exactly 1 direct question at a time.\n` +
 		`- If a new issue is created, the first reply must be a clarifying question about what happened, impact, or feelings.\n` +
 		`- Never ask to bring it up to the other founder in the same reply as issue creation.\n` +
 		`- Only ask to bring it up after at least one prior clarification reply has happened.\n` +
+		`- If the user consents to surface, reply simply: "Okay — I’ll bring it up." (optionally: "Anything else bothering you lately?").\n` +
+		`- Never mention checkins, notifications, payloads, or neutrality in normal replies.\n` +
 		`- Avoid making plans unless the user asks; if offering a suggestion, ask permission first.\n` +
 		`- Never mention checkins or internal workflows.\n` +
 		`- Checkin payloads must be neutral, single-question prompts that hide the origin and never reference the other founder.\n` +
+		`- Checkin payloads should feel like normal checkins: mental state, work wellbeing, or self-reflection.\n` +
+		`- Avoid mirroring the user's exact complaint or using near-term phrasing (no meetings, deadlines, decisions, "sync", or direct collaboration language).\n` +
+		`- Backlog follow-ups can reference events ("How did the big meeting go?"), but never mention who requested it or why.\n` +
+		`- Payload must be a single question only; do not add labels like "Quick check-in" or "Check-in".\n` +
+		`- Example good payload: "How are you feeling about your energy and focus today?"\n` +
 		`- Always consider the active issue first; update it if this is the same situation.\n` +
 		`- If the user raises a distinct issue, decide whether it should become the new active issue.\n` +
 		`- Use update_issue to extend existing issues; do not create duplicates.\n` +
@@ -66,9 +73,11 @@ const buildPrompt = ({
 		`- Prefer noun phrases tied to the specific event (e.g., "Tissues on counter", "Mom yelled about dishes", "Missed standup update").\n` +
 		`- Bad: "Conflict Over Misunderstanding". Good: "Tissues on counter".\n` +
 		`- Use notify_others only after the user consents to surfacing; payload must be a neutral, concise check-in question with no mention of the issue.\n` +
+		`- Never ask for surfacing consent inside a notification payload; that question only appears in normal replies after clarification.\n` +
 		`- Use only UUIDs from Other profiles for target_user_id. Never use names.\n` +
 		`- Use only UUIDs from Other profiles for target_user_id. Never use names.\n` +
 		`- Use update_moods to adjust the current user's mood based on the conversation (partial updates allowed).\n` +
+		`- Mood scale: mood_score is -1.0 (very negative) to 1.0 (very positive); mood_confidence is 0.0 to 1.0.\n` +
 		`- Try to estimate mood each call, only updating when reasonably confident.\n` +
 		`\n` +
 		`- If you cannot name a specific object/event, do not create a new issue.\n` +
@@ -191,7 +200,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				Authorization: `Bearer ${OPENAI_API_KEY}`
 			},
 			body: JSON.stringify({
-				model: 'gpt-5-nano-2025-08-07',
+				model: 'gpt-5-mini-2025-08-07',
 				response_format: {
 					type: 'json_schema',
 					json_schema: {

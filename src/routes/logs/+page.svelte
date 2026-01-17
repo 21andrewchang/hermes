@@ -43,30 +43,49 @@
 		created_at: string;
 	};
 
+	type ChatMessage = {
+		id: string;
+		session_id: string;
+		sender_type: string;
+		message_type: string | null;
+		content: string;
+		created_at: string;
+	};
+
 	let profiles = $state<Profile[]>([]);
 	let issues = $state<Issue[]>([]);
 	let logs = $state<LogEntry[]>([]);
 	let checkins = $state<Checkin[]>([]);
+	let messages = $state<ChatMessage[]>([]);
 	let errorMessage = $state<string | null>(null);
 	let copyMessage = $state<string | null>(null);
 
 	const loadData = async () => {
-		const [profilesResult, issuesResult, logsResult, checkinsResult] = await Promise.all([
-			supabase.from('profiles').select('*').order('created_at', { ascending: true }),
-			supabase.from('issues').select('*').order('created_at', { ascending: false }),
-			supabase
-				.from('logs')
-				.select('id, user_id, reason, action, actions, created_at')
-				.order('created_at', { ascending: false }),
-			supabase.from('checkins').select('*').order('created_at', { ascending: false })
-		]);
+		const [profilesResult, issuesResult, logsResult, checkinsResult, messagesResult] =
+			await Promise.all([
+				supabase.from('profiles').select('*').order('created_at', { ascending: true }),
+				supabase.from('issues').select('*').order('created_at', { ascending: false }),
+				supabase
+					.from('logs')
+					.select('id, user_id, reason, action, actions, created_at')
+					.order('created_at', { ascending: false }),
+				supabase.from('checkins').select('*').order('created_at', { ascending: false }),
+				supabase.from('chat_messages').select('*').order('created_at', { ascending: false })
+			]);
 
-		if (profilesResult.error || issuesResult.error || logsResult.error || checkinsResult.error) {
+		if (
+			profilesResult.error ||
+			issuesResult.error ||
+			logsResult.error ||
+			checkinsResult.error ||
+			messagesResult.error
+		) {
 			errorMessage =
 				profilesResult.error?.message ||
 				issuesResult.error?.message ||
 				logsResult.error?.message ||
 				checkinsResult.error?.message ||
+				messagesResult.error?.message ||
 				'Failed to load logs.';
 			return;
 		}
@@ -75,10 +94,26 @@
 		issues = (issuesResult.data ?? []) as Issue[];
 		logs = (logsResult.data ?? []) as LogEntry[];
 		checkins = (checkinsResult.data ?? []) as Checkin[];
+		messages = (messagesResult.data ?? []) as ChatMessage[];
 	};
 
 	const formatSection = (label: string, rows: unknown[]) => {
 		return `${label}:\n${rows.map((row) => JSON.stringify(row)).join('\n')}`;
+	};
+
+	const formatPst = (value: string | null) => {
+		if (!value) return '-';
+		const date = new Date(value);
+		return date.toLocaleString('en-US', {
+			timeZone: 'America/Los_Angeles',
+			year: 'numeric',
+			month: 'short',
+			day: '2-digit',
+			hour: 'numeric',
+			minute: '2-digit',
+			hour12: true,
+			weekday: 'short'
+		});
 	};
 
 	const copyLogs = async () => {
@@ -86,7 +121,8 @@
 			formatSection('profiles', profiles),
 			formatSection('issues', issues),
 			formatSection('checkins', checkins),
-			formatSection('logs', logs)
+			formatSection('logs', logs),
+			formatSection('messages', messages)
 		].join('\n\n');
 
 		await navigator.clipboard.writeText(text);
@@ -214,9 +250,11 @@
 								<td class="border-b border-stone-100 px-4 py-3">{checkin.payload ?? '-'}</td>
 								<td class="border-b border-stone-100 px-4 py-3">{checkin.reason ?? '-'}</td>
 								<td class="border-b border-stone-100 px-4 py-3">
-									{checkin.scheduled_for ?? '-'}
+									{formatPst(checkin.scheduled_for)}
 								</td>
-								<td class="border-b border-stone-100 px-4 py-3">{checkin.sent_at ?? '-'}</td>
+								<td class="border-b border-stone-100 px-4 py-3">
+									{formatPst(checkin.sent_at)}
+								</td>
 							</tr>
 						{/each}
 					</tbody>
