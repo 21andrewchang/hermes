@@ -12,6 +12,7 @@
 		| 'stanford'
 		| 'sycamore'
 		| 'pickford'
+		| 'gramercy'
 		| '18th'
 		| '17th';
 	type BuildingTab = Exclude<Tab, 'inbox' | 'payables'>;
@@ -24,6 +25,7 @@
 		{ id: 'stanford', label: 'Stanford' },
 		{ id: 'sycamore', label: 'Sycamore' },
 		{ id: 'pickford', label: 'Pickford' },
+		{ id: 'gramercy', label: 'Gramercy' },
 		{ id: '18th', label: '18th' },
 		{ id: '17th', label: '17th' }
 	];
@@ -107,6 +109,7 @@
 		Stanford: ['1', '2', '3', '4', '5', '6'],
 		Sycamore: ['836', '836 1/2', '838', '838 1/2'],
 		Pickford: ['4637', '4637 1/2', '4639', '4639 1/2'],
+		Gramercy: ['N/A'],
 		'18th': ['1', '2', '3', '4'],
 		'17th': ['4723', '4725']
 	};
@@ -125,6 +128,7 @@ const buildingUnitMap: Record<BuildingTab, string[]> = {
 	stanford: buildingUnits['Stanford'],
 	sycamore: buildingUnits['Sycamore'],
 	pickford: buildingUnits['Pickford'],
+	gramercy: buildingUnits['Gramercy'],
 	'18th': buildingUnits['18th'],
 	'17th': buildingUnits['17th']
 };
@@ -159,6 +163,12 @@ const buildingUnitMap: Record<BuildingTab, string[]> = {
 			address: '4637 Pickford St, Los Angeles, CA 90019',
 			description: 'Unit directory for Pickford.',
 			units: buildingUnitMap.pickford
+		},
+		gramercy: {
+			name: 'Gramercy',
+			address: 'Gramercy Place',
+			description: 'Single-family home.',
+			units: buildingUnitMap.gramercy
 		},
 		'18th': {
 			name: '18th',
