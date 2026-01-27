@@ -26,11 +26,11 @@ When user pastes an email/SMS about a property issue:
 - After creating the issue, summarize what you did and STOP. Do NOT call draft_message for any other issues.
 
 **Contact options (choose based on issue type):**
-- **Esther**: Property manager. For easy work, general management, tenant requests, onsite coordination.
-- **Erick**: AC technician. For all air conditioning and HVAC issues.
-- **Justin**: General handyman. For repairs (drywall, doors, fixtures, etc).
-- **Rufino**: Plumber. For plumbing issues (leaks, clogs, water heaters, etc).
-- **Magic Fix**: Appliance technician. For appliance repairs (dishwasher, washer/dryer, stove, refrigerator, etc).
+- **Message Esther**: Property manager. For easy work, general management, tenant requests, onsite coordination.
+- **Message Erick**: AC technician. For all air conditioning and HVAC issues.
+- **Message Justin**: General handyman. For repairs (drywall, doors, fixtures, etc).
+- **Message Rufino**: Plumber. For plumbing issues (leaks, clogs, water heaters, etc).
+- **Message Magic Fix**: Appliance technician. For appliance repairs (dishwasher, washer/dryer, stove, refrigerator, etc).
 
 ## Drafting Messages for Existing Issues
 **CRITICAL**: ONLY use the draft_message tool when the user EXPLICITLY asks you to draft/rewrite a message for a specific existing issue.
@@ -55,7 +55,25 @@ When user explicitly asks to draft a message:
 - 2-4 sentences, professional but friendly
 - Address the recipient by name (e.g., "Hi Erick,")
 - Reference the specific issue (building, unit, problem)
-- Match tone to status: urgent for new issues, polite for follow-ups`;
+- Match tone to status: urgent for new issues, polite for follow-ups
+
+## Updating Existing Issues
+When user pastes a follow-up message about an existing issue (e.g., from a vendor or tenant confirming work):
+- Identify which issue the message refers to from the recent issues list
+- Use update_issue to change the status and/or action
+
+**Status updates:**
+- Work started/in progress → "In Progress"
+- Work completed/fixed/resolved → "Complete"
+
+**Action updates when work is complete:**
+- Change from "Message [Name]" to a short 2-4 word phrase describing what was done
+- Examples: "Fixed AC", "Replaced faucet", "Patched drywall", "Resolved leak", "Installed dishwasher"
+
+**Examples:**
+- "Erick fixed the AC" → status: "Complete", action: "Fixed AC"
+- "Rufino is heading over now" → status: "In Progress" (keep current action)
+- "The dishwasher has been replaced" → status: "Complete", action: "Replaced dishwasher"`;
 
 const tools: ChatCompletionTool[] = [
 	{
@@ -81,7 +99,7 @@ const tools: ChatCompletionTool[] = [
 					},
 					action: {
 						type: 'string',
-						description: 'Who to contact: "Esther" (property manager for easy work/general management), "Erick" (AC technician), "Justin" (general handyman), "Rufino" (plumber), or "Magic Fix" (appliance tech).'
+						description: 'Action to take: "Message Esther", "Message Erick", "Message Justin", "Message Rufino", or "Message Magic Fix".'
 					},
 					status: {
 						type: 'string',
@@ -130,6 +148,34 @@ const tools: ChatCompletionTool[] = [
 					}
 				},
 				required: ['issue_id', 'message_type', 'draft_content']
+			}
+		}
+	},
+	{
+		type: 'function',
+		function: {
+			name: 'update_issue',
+			description:
+				'Update an existing issue when you receive a follow-up message about work progress or completion. Use this to update status and/or action.',
+			parameters: {
+				type: 'object',
+				properties: {
+					issue_id: {
+						type: 'string',
+						description: 'The ID of the issue to update (from the recent issues list)'
+					},
+					status: {
+						type: 'string',
+						enum: ISSUE_STATUSES,
+						description: 'New status for the issue'
+					},
+					action: {
+						type: 'string',
+						description:
+							'Updated action: either "Message [Name]" for pending work, or a short 2-4 word completion phrase like "Fixed AC", "Replaced dishwasher", "Resolved leak"'
+					}
+				},
+				required: ['issue_id']
 			}
 		}
 	}
@@ -332,6 +378,40 @@ async function handleDraftMessage(args: DraftMessageArgs): Promise<ToolCallResul
 	return { success: true, issue: data as IssueRow };
 }
 
+interface UpdateIssueArgs {
+	issue_id?: string;
+	status?: IssueStatus;
+	action?: string;
+}
+
+async function handleUpdateIssue(args: UpdateIssueArgs): Promise<ToolCallResult> {
+	const issueId = args.issue_id?.trim();
+	if (!issueId) {
+		return { success: false, error: 'Missing issue_id' };
+	}
+
+	const updates: Record<string, unknown> = {};
+	if (args.status) updates.status = args.status;
+	if (args.action) updates.action = args.action.trim();
+
+	if (Object.keys(updates).length === 0) {
+		return { success: false, error: 'No fields to update' };
+	}
+
+	const { data, error } = await supabase
+		.from('issues')
+		.update(updates)
+		.eq('id', issueId)
+		.select('id, reported_at, building, unit, description, action, status, is_draft, draft')
+		.single();
+
+	if (error || !data) {
+		return { success: false, error: error?.message ?? 'Failed to update issue' };
+	}
+
+	return { success: true, issue: data as IssueRow };
+}
+
 async function fetchRecentIssues(): Promise<string> {
 	const { data: recentIssues } = await supabase
 		.from('issues')
@@ -387,7 +467,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				if (toolCall.type !== 'function') continue;
 
 				const toolName = toolCall.function.name;
-				let parsedArgs: CreateIssueArgs | DraftMessageArgs = {};
+				let parsedArgs: CreateIssueArgs | DraftMessageArgs | UpdateIssueArgs = {};
 				try {
 					parsedArgs = JSON.parse(toolCall.function.arguments ?? '{}');
 				} catch (parseError) {
@@ -405,6 +485,12 @@ export const POST: RequestHandler = async ({ request }) => {
 						break;
 					case 'draft_message':
 						result = await handleDraftMessage(parsedArgs as DraftMessageArgs);
+						if (result.success && result.issue) {
+							updatedIssue = result.issue;
+						}
+						break;
+					case 'update_issue':
+						result = await handleUpdateIssue(parsedArgs as UpdateIssueArgs);
 						if (result.success && result.issue) {
 							updatedIssue = result.issue;
 						}
